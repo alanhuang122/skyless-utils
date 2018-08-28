@@ -1,5 +1,7 @@
 # skyless-utils
-Utilities for serialization of Sunless Skies data
+Utilities for serialization of Sunless Skies data.
+
+Python 3.7 is required.
 
 This codebase is largely based off [fl-utils](https://github.com/alanhuang122/fl-utils).
 
@@ -16,5 +18,7 @@ This codebase is largely based off [fl-utils](https://github.com/alanhuang122/fl
   Namespace `Skyless.Assets.Code.Skyless.Utilities.Serialization` is defined in `Assembly-CSharp.dll`, in the Sunless Skies directory.
 
 Running `convert.py` from the directory containing the JSON-serialized data will produce a file suitable for use with `init.py`.
+
+Run `python -i init.py` from the directory containing the data file.
 
 To format Storylets, Qualities, etc., ```print(skyless.Storylet.get(284781))``` or ```print(skyless.Quality.get(804))```, for example.

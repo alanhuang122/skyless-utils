@@ -1,10 +1,11 @@
-#!/usr/bin/python2
 # -*- coding: utf-8 -*-
-import json, re
+import json, re, sys
 from enum import Enum
 from html.parser import HTMLParser
 cache = {}
 data = {}
+
+assert sys.version_info > (3,7), "Yes, you need Python 3.7 to use this; no, I'm not sorry. Update your interpreter."
 
 class AllowedOn(Enum):
     Unspecified = 0
