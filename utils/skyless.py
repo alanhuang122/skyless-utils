@@ -340,14 +340,16 @@ class Storylet: #done?
     def __str__(self):
         #_,c = os.popen('stty size', u'r').read().split()
         string = f'{self.type} Title: "{self.title}"\n'
+        restrictions = []
         try:
-            string += f'Appears in {self.setting.title}'
+            restrictions.append(f'Appears in {self.setting.title}')
         except AttributeError:
             pass
         try:
-            string += f' Limited to area: {self.area.name}'
+            restrictions.append(f' Limited to area: {self.area.name}')
         except AttributeError:
             pass
+        string += ' '.join(restrictions)
         string += f'\nDescription: {render_html(self.desc)}'
         string += f'\nRequirements: {render_requirements(self.requirements)}'
         string += '\nBranches:\n{}'.format(f"\n\n{'~' * 20}\n\n".join(self.render_branches()))
@@ -385,6 +387,10 @@ class Branch:   #done
                     self.events[key] = jdata[key]
                 else:
                     self.events[key] = Event.get(jdata[key])
+        if 'RareSuccessEvent' in self.events and 'RareSuccessEventChance' not in self.events:
+            self.events['RareSuccessEventChance'] = 0
+        if 'RareDefaultEvent' in self.events and 'RareDefaultEventChance' not in self.events:
+            self.events['RareDefaultEventChance'] = 0
     
     def __repr__(self):
         return f'"{self.title}"'
@@ -520,6 +526,8 @@ class Effect:   #done: Priority goes 3/2/1/0
             self.priority = 0
 
     def __repr__(self):
+        if not hasattr(self, 'setTo') and not hasattr(self, 'amount'):
+            return f'{self.quality.name} - no effect'
         try:
             limits = f' if no more than {self.ceil} and at least {self.floor}'
         except:
