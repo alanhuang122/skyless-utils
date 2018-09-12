@@ -119,7 +119,7 @@ class Quality:
         self.category = Category(jdata.get('Category'))
         try:
             self.changedesc = convert_keys(json.loads(jdata.get('ChangeDescriptionText')))
-        except TypeError:
+        except:
             self.changedesc = None
         self.css = jdata.get('CssClasses')
         self.desc = jdata.get('Description', '(no description)')
@@ -135,7 +135,7 @@ class Quality:
         self.is_slot = jdata.get('IsSlot', False)
         try:
             self.leveldesc = convert_keys(json.loads(jdata.get('LevelDescriptionText')))
-        except TypeError:
+        except:
             self.leveldesc = None
         self.name = jdata.get('Name', '(no name)')
         self.nature = Nature(jdata.get('Nature'))
@@ -162,7 +162,7 @@ class Quality:
         try:
             self.variables = json.loads(jdata.get('VariableDescriptionText'))
             self.variables = {k: convert_keys(v) for k,v in sorted(self.variables.items())}
-        except TypeError:
+        except:
             self.variables = None
         self.visible = jdata.get('Visible')
 
