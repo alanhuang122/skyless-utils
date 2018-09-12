@@ -191,6 +191,28 @@ class Quality:
                 cache[key].event = Storylet.get(cache[key].event)
             return cache[key]
 
+    def get_changedesc(self, level):
+        if self.changedesc and isinstance(level, int):
+            descs = sorted(list(self.changedesc.items()), reverse=True)
+            for x in descs:
+                if x[0] <= level:
+                    desc = x
+                    break
+                desc = (-1, 'no description')
+            return desc
+        return None
+
+    def get_leveldesc(self, level):
+        if self.leveldesc and isinstance(level, int):
+            descs = sorted(list(self.leveldesc.items()), reverse=True)
+            for x in descs:
+                if x[0] <= level:
+                    desc = x
+                    break
+                desc = (-1, 'no description')
+            return desc
+        return None
+
 def sub_qualities(string):
     for x in re.findall(r'\[qb?:(\d+)\]', string):
         string = string.replace(x, Quality.get(int(x)).name)
@@ -245,14 +267,29 @@ class Requirement:  #done
             string += self.quality.name
             try:
                 if self.lower_bound == self.upper_bound:
-                    string += f' exactly {self.lower_bound}'
+                    desc = self.quality.get_changedesc(self.lower_bound)
+                    if desc:
+                        desc = f' ({desc[1]})'
+                    string += f' exactly {self.lower_bound}{desc if desc else ""}'
                 else:
-                    string += f' [{self.lower_bound}-{self.upper_bound}]'
+                    lower = self.quality.get_changedesc(self.lower_bound)
+                    if lower:
+                        lower = f' ({lower[1]})'
+                    upper = self.quality.get_changedesc(self.upper_bound)
+                    if upper:
+                        upper = f' ({upper[1]})'
+                    string += f' [{self.lower_bound}{lower if lower else ""}-{self.upper_bound}{upper if upper else ""}]'
             except:
                 try:
-                    string += f' at least {self.lower_bound}'
+                    desc = self.quality.get_changedesc(self.lower_bound)
+                    if desc:
+                        desc = f' ({desc[1]})'
+                    string += f' at least {self.lower_bound}{desc if desc else ""}'
                 except:
-                    string += f' no more than {self.upper_bound}'
+                    desc = self.quality.get_changedesc(self.upper_bound)
+                    if desc:
+                        desc = f' ({desc[1]})'
+                    string += f' no more than {self.upper_bound}{desc if desc else ""}'
         return string
 
 def render_requirements(rl):
@@ -497,15 +534,11 @@ class Effect:   #done: Priority goes 3/2/1/0
             limits += ' (force equipped)'
                 
         try:
-            if self.quality.leveldesc and isinstance(self.setTo, int):
-                descs = sorted(list(self.quality.leveldesc.items()), reverse=True)
-                for x in descs:
-                    if x[0] <= self.setTo:
-                        desc = x
-                        break
+            if self.quality.changedesc and isinstance(self.setTo, int):
+                desc = self.quality.get_changedesc(self.setTo)
                 try:
                     return f'{self.quality.name} (set to {self.setTo} ({desc[1]}){limits})'
-                except NameError:
+                except TypeError:
                     pass
             return f'{self.quality.name} (set to {self.setTo}{limits})'
         except:
