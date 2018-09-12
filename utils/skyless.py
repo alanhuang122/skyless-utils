@@ -116,7 +116,7 @@ class Quality:
         self.allowed_on = AllowedOn(jdata.get('AllowedOn'))
         self.available_at = jdata.get('AvailableAt')
         self.cap = jdata.get('Cap')
-        self.category = Category(jdata.get('Category'))
+        self.category = Category(jdata.get('Category', 0))
         try:
             self.changedesc = convert_keys(json.loads(jdata.get('ChangeDescriptionText')))
         except:
@@ -138,7 +138,7 @@ class Quality:
         except:
             self.leveldesc = None
         self.name = jdata.get('Name', '(no name)')
-        self.nature = Nature(jdata.get('Nature'))
+        self.nature = Nature(jdata.get('Nature', 0))
         self.notes = jdata.get('Notes')
         # OwnQualitiesCount == len(QualitiesPossessedList)
         self.owner_name = jdata.get('OwnerName')
@@ -433,9 +433,10 @@ class Event:    #done
         except KeyError:
             self.exotic_effect = None
         self.img = jdata.get('Image')
-        assert jdata.get('SwitchToSettingId') == jdata.get('SwitchToSetting', {}).get('Id')
+        if jdata.get('SwitchToSettingId') and jdata.get('SwitchToSetting', {}).get('Id'):
+            assert jdata.get('SwitchToSettingId') == jdata.get('SwitchToSetting', {}).get('Id')
         try:
-            self.newsetting = Setting.get(jdata.get('SwitchToSettingId'))
+            self.newsetting = Setting.get(jdata.get('SwitchToSetting', {}).get('Id'))
         except:
             self.newsetting = None
         try:
@@ -636,7 +637,7 @@ class Setting:
             string += f'\nStarting area: {self.area}'
         if self.domicile:
             string += f'\nStarting lodging: {self.domicile}'
-        string += '\nItems are {"" if self.items else "NOT "}usable here'
+        string += f'\nItems are {"" if self.items else "NOT "}usable here'
         return string
 
     @classmethod
@@ -663,7 +664,7 @@ class Area:
     def __str__(self):
         string = f'{self.name} (Id {self.id})'
         string += f'\nDescription: {self.desc}'
-        string += '\n{self.message}'
+        string += f'\n{self.message}'
         return string
 
     @classmethod
