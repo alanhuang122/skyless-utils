@@ -149,6 +149,7 @@ class Quality:
         self.persistent = 'Persistent' in jdata
         self.plural = jdata.get('PluralName')
         self.pyramid = 'UsePyramidNumbers' in jdata
+        self.qep = jdata.get('QEffectPriority')
         self.qualities = []
         for x in jdata['QualitiesPossessedList']:
             self.qualities.append(Effect(x))
@@ -171,6 +172,7 @@ class Quality:
 
     def __str__(self):
         string = f'{self.nature.name}: {self.name}'
+        string += f'\nDescription: {self.desc}'
         string += f'\nCategory: {self.category.name}'
         if self.enhancements:
             string += f'\nEnhancements: {self.enhancements}'
