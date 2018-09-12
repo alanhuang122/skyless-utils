@@ -446,6 +446,13 @@ class Event:    #done
             self.linkedevent = Storylet.get(jdata['LinkToEvent']['Id'])
         except KeyError:
             self.linkedevent = None
+        self.branches = []
+        for b in jdata.get('ChildBranches'):
+            branch = Branch.get(b, self)
+            self.branches.append(branch)
+            for e in list(branch.events.items()):
+                if e[0].endswith('Event'):
+                    e[1].parent = branch
     
     def __repr__(self):
         return f'Event: {self.title}'
@@ -490,6 +497,8 @@ def render_events(event_dict):
             else:
                 string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{event.title}" ({event_dict["RareDefaultEventChance"]}% chance)'
             string += f'\n{render_html(event.desc)}\nEffects: {event.list_effects()}'
+            if event.branches:
+                string += '\nBranches:\n{}'.format(f"\n\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
             strings.append(string)
     return f'\n\n{"-" * 20}\n\n'.join(strings)
 
