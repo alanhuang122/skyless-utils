@@ -106,7 +106,7 @@ def render_html(string):
     string = re.sub(r'<.{,2}?br.{,2}?>','\n', string)
     string = re.sub(r'<.{,2}?[pP].{,2}?>','', string)
     string = re.sub('</?em>', '_', string)
-    string = re.sub('</?i>', '_', string)
+    string = re.sub('</?[iI]>', '_', string)
     string = re.sub('</?strong>', '*', string)
     string = re.sub('</?b>', '*', string)
     return string
@@ -499,7 +499,7 @@ def render_events(event_dict):
                 string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{event.title}" ({event_dict["RareDefaultEventChance"]}% chance)'
             string += f'\n{render_html(event.desc)}\nEffects: {event.list_effects()}'
             if event.branches:
-                string += '\nBranches:\n{}'.format(f"\n\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
+                string += '\nSub-branches:\n{}'.format(f"\n\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
             strings.append(string)
     return f'\n\n{"-" * 20}\n\n'.join(strings)
 
