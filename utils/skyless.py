@@ -216,10 +216,12 @@ class Quality:
 def sub_qualities(string):
     for x in re.findall(r'\[qb?:(\d+)\]', string):
         string = string.replace(x, Quality.get(int(x)).name)
+    for x in re.findall(r'\[qvd:(\d+)\(([^\)]+)\)\]', string):
+        string = string.replace(x[0], Quality.get(int(x[0])).name)
     return string
 
-def convert_keys(dict):
-    return {int(k): v for k,v in sorted(dict.items())}
+def convert_keys(input):
+    return dict(sorted([(int(k), v) for k,v in input.items()]))
 
 class Requirement:  #done
     def __init__(self, jdata):
@@ -346,11 +348,11 @@ class Storylet: #done?
         except AttributeError:
             pass
         try:
-            restrictions.append(f' Limited to area: {self.area.name}')
+            restrictions.append(f'Limited to area: {self.area.name}')
         except AttributeError:
             pass
         string += ' '.join(restrictions)
-        string += f'\nDescription: {render_html(self.desc)}'
+        string += f'\nDescription: {sub_qualities(render_html(self.desc))}'
         string += f'\nRequirements: {render_requirements(self.requirements)}'
         string += '\nBranches:\n{}'.format(f"\n\n{'~' * 20}\n\n".join(self.render_branches()))
         return string
@@ -398,7 +400,7 @@ class Branch:   #done
     def __str__(self):
         string = f'Branch Title: "{self.title}"'
         if self.desc:
-            string += f'\nDescription: {render_html(self.desc)}'
+            string += f'\nDescription: {sub_qualities(render_html(self.desc))}'
         string += f'\nRequirements: {render_requirements(self.requirements)}'
         if self.cost != 1:
             string += f'\nAction cost: {self.cost}'
@@ -459,7 +461,7 @@ class Event:    #done
         return f'Event: {self.title}'
     
     def __str__(self):
-        return f'Title: "{self.title}"\nDescription: {render_html(self.desc)}\nEffects: {self.list_effects()}\n'
+        return f'Title: "{self.title}"\nDescription: {sub_qualities(render_html(self.desc))}\nEffects: {self.list_effects()}\n'
     
     def list_effects(self):
         effects = []
@@ -497,7 +499,7 @@ def render_events(event_dict):
                 string = f'{"Failure" if "SuccessEvent" in event_dict else "Event"}: "{event.title}"'
             else:
                 string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{event.title}" ({event_dict["RareDefaultEventChance"]}% chance)'
-            string += f'\n{render_html(event.desc)}\nEffects: {event.list_effects()}'
+            string += f'\n{sub_qualities(render_html(event.desc))}\nEffects: {event.list_effects()}'
             if event.branches:
                 string += '\nSub-branches:\n{}'.format(f"\n\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
             strings.append(string)
