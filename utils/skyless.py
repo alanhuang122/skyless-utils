@@ -572,38 +572,6 @@ class Effect:   #done: Priority goes 3/2/1/0
                     return f'{self.quality.name} ({self.amount:+} cp{limits})'
                 except:
                     return f'{self.quality.name} ({"" if self.amount.startswith("-") else ""}{self.amount} cp{limits})'
-        
-class Lodging:
-    def __init__(self, jdata):
-        self.raw = jdata
-        self.id = jdata.get('Id')
-        self.name = jdata.get('Name', '(no name)')
-        self.desc = render_html(jdata.get('Description', '(no description)'))
-        self.image = jdata.get('ImageName')
-        self.hand = jdata.get('MaxHandSize')
-
-    def __repr__(self):
-        return self.name
-
-    def __str__(self):
-        string = f'Lodging: {self.name} (Id {self.id})'
-        string += f'\nDescription: {self.desc}'
-        if not self.hand:
-            string += '\nHand size: None'
-        elif self.hand == 1:
-            string += '\nHand size: 1 card'
-        else:
-            string += f'\nHand size: {f"{self.hand} cards" if self.hand else "N/A"}'
-        return string
-
-    @classmethod
-    def get(self, id):
-        key = f'domiciles:{id}'
-        if key in cache:
-            return cache[key]
-        else:
-            cache[key] = Lodging(data[key])
-            return cache[key]
 
 class Setting:
     def __init__(self, jdata):
@@ -611,35 +579,16 @@ class Setting:
         self.id = jdata.get('Id')
         self.title = jdata.get('Name')
         self.persona = jdata.get('Personae')
-        self.maxactions = jdata.get('MaxActionsAllowed')
-        self.exhaustion = jdata.get('ActionsInPeriodBeforeExhaustion')
-        self.turnlength = jdata.get('TurnLengthSeconds')
 
-        self.area = jdata.get('StartingArea', {}).get('Id')
-        if self.area:
-            assert jdata.get('StartingArea') == data[f'areas:{self.area}']
-            self.area = Area.get(self.area)
-
-        self.domicile = jdata.get('StartingDomicile')
-        if self.domicile:
-            self.domicile = Lodging(self.domicile)
-
-#        self.exchange = jdata.get('Exchange')
-#        if self.exchange:
-#            self.exchange = Exchange(self.exchange)
-        
-        self.items = 'ItemsUsableHere' in jdata
+        self.exchange = jdata.get('Exchange')
+        if self.exchange:
+            self.exchange = Exchange(self.exchange)
 
     def __repr__(self):
         return self.title
 
     def __str__(self):
         string = f'Setting name: {self.title} (Id {self.id})'
-        if self.area:
-            string += f'\nStarting area: {self.area}'
-        if self.domicile:
-            string += f'\nStarting lodging: {self.domicile}'
-        string += f'\nItems are {"" if self.items else "NOT "}usable here'
         return string
 
     @classmethod
