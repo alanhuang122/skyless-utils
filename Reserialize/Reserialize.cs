@@ -81,28 +81,19 @@ namespace Sunless_Skies_Serialization
             Stream gzipstream = new GZipOutputStream(outstream);
             TarArchive tar = TarArchive.CreateOutputTarArchive(gzipstream);
 
-            AddDirectoryFilesToTar(tar, dstpath, true);
+            AddDirectoryFilesToTar(tar, dstpath);
 
             tar.Close();
         }
 
-        static void AddDirectoryFilesToTar(TarArchive tarArchive, string sourceDirectory, bool recurse)
+        static void AddDirectoryFilesToTar(TarArchive tarArchive, string sourceDirectory)
         {
-            TarEntry tarEntry = TarEntry.CreateEntryFromFile(sourceDirectory);
-            tarArchive.WriteEntry(tarEntry, false);
-
             string[] filenames = Directory.GetFiles(sourceDirectory);
             foreach (string filename in filenames)
             {
-                tarEntry = TarEntry.CreateEntryFromFile(filename);
-                tarArchive.WriteEntry(tarEntry, true);
-            }
-
-            if (recurse)
-            {
-                string[] directories = Directory.GetDirectories(sourceDirectory);
-                foreach (string directory in directories)
-                    AddDirectoryFilesToTar(tarArchive, directory, recurse);
+                TarEntry tarEntry = TarEntry.CreateEntryFromFile(filename);
+                tarEntry.Name = Path.GetFileName(filename);
+                tarArchive.WriteEntry(tarEntry, false);
             }
         }
 
