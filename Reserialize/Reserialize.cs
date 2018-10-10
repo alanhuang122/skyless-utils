@@ -11,10 +11,11 @@ namespace Sunless_Skies_Serialization
 {
     class Reserialize
     {
-        static string latest = "2018-07-31";
-        static string basepath = "[SET PATH HERE]\\{0}\\{1}\\";
-        static string srcpath = String.Format(basepath, latest, "TextAsset");
-        static string dstpath = String.Format(basepath, latest, "Decoded");
+        static string latest = "2018-10-10";
+        static string basepath = "[SET PATH HERE]\\";
+        static string srcpath = basepath + latest + "\\TextAsset\\";
+        static string dstpath = basepath + latest + "\\Decoded\\";
+
         static Logger logger = new Logger();
         static BinarySerializationService bss = new BinarySerializationService(null, null);
         static IList<Domicile> dl;
@@ -77,7 +78,7 @@ namespace Sunless_Skies_Serialization
 
         static void Zip()
         {
-            Stream outstream = File.Create(dstpath + "data.tar.gz");
+            Stream outstream = File.Create(basepath + latest + "\\data.tar.gz");
             Stream gzipstream = new GZipOutputStream(outstream);
             TarArchive tar = TarArchive.CreateOutputTarArchive(gzipstream);
 
@@ -99,8 +100,20 @@ namespace Sunless_Skies_Serialization
 
         static void Main(string[] args)
         {
+            // ensure that directories exist
+            Directory.CreateDirectory(srcpath);
+            Directory.CreateDirectory(dstpath);
             Console.WriteLine("loading...");
-            LoadData();
+            try
+            {
+                LoadData();
+            }
+            catch (FileNotFoundException e)
+            {
+                Console.WriteLine(String.Format("ERROR: Could not find file {0}", e.FileName));
+                Console.ReadKey();
+                System.Environment.Exit(2);
+            }
             Console.WriteLine("writing...");
             Dump();
             Console.WriteLine("zipping...");
