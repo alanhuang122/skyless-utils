@@ -261,8 +261,8 @@ class Requirement:  #done
         if not self.visibility:
             string += '[Branch hidden if failed] '
         if self.type == 'Challenge':
-            if self.quality.id == 432:
-                string += f'Luck: {50 - self.difficulty * 10}% chance'
+            if self.quality.id == 138163:
+                string += f'Fortune: {50 - self.difficulty * 10}% chance'
             else:
                 string += f'{self.test_type} {self.type}: {self.quality.name} {self.difficulty}'
         else:
