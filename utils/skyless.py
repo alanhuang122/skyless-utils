@@ -634,6 +634,7 @@ class Exchange:
         self.name = jdata.get('Name', '(no name)')
         self.title = jdata.get('Title', '(no title)')
         self.desc = jdata.get('Description', '(no description)')
+        self.settings = jdata.get('SettingIds', [])
         self.shops = []
         for x in jdata.get('Shops', []):
             self.shops.append(Shop(x))
@@ -642,7 +643,14 @@ class Exchange:
         return f'Exchange Title: {self.title} (ID {self.id})'
     
     def __str__(self):
-        return f'Exchange Title: {self.title} (ID {self.id})\nExchange Name: {self.name}\nExchange Description: {self.desc}\nShops:\n{self.shops}'
+        settings = [Setting.get(s).title for s in self.settings]
+        string = f'Exchange Title: {self.title} (ID {self.id})\n'
+        string += f'Found in {", ".join(settings)}\n'
+        string += f'Exchange Name: {self.name}\n'
+        string += f'Exchange Description: {self.desc}\n'
+        string += f'Shops:\n'
+        string += '\n\n'.join([str(shop) for shop in self.shops])
+        return string
 
     def __getitem__(self, key):
         return next(s for s in self.shops if s.name == key)
@@ -674,7 +682,12 @@ class Shop:
         return self.name
 
     def __str__(self):
-        return f'Shop Name: {self.name}\nDescription: {self.desc}\nItems: [{", ".join([o.item.name for o in self.offerings])}]'
+        string = f'Shop Name: {self.name}\n'
+        string += f'Description: {self.desc}\n'
+        string += f'Requirements: {render_requirements(self.requirements)}\n'
+        string += f'Items:\n'
+        string += '\n\n'.join([str(o) for o in self.offerings])
+        return string
 
     def __getitem__(self, key):
         return next(o for o in self.offerings if o.item.name == key)
