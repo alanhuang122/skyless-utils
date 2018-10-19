@@ -631,23 +631,31 @@ class Exchange:
     def __init__(self, jdata):
         self.raw = jdata
         self.id = jdata.get('Id')
-        self.name = jdata.get('Name', '(no name)')
-        self.title = jdata.get('Title', '(no title)')
-        self.desc = jdata.get('Description', '(no description)')
+        self.name = jdata.get('Name')
+        self.title = jdata.get('Title')
+        self.desc = jdata.get('Description')
         self.settings = jdata.get('SettingIds', [])
         self.shops = []
         for x in jdata.get('Shops', []):
             self.shops.append(Shop(x))
     
     def __repr__(self):
-        return f'Exchange Title: {self.title} (ID {self.id})'
-    
+        if self.title:
+            return f'Exchange Title: {self.title} (ID {self.id})'
+        else:
+            return f'Exchange {self.id}'
+
     def __str__(self):
         settings = [Setting.get(s).title for s in self.settings]
-        string = f'Exchange Title: {self.title} (ID {self.id})\n'
+        if self.title:
+            string = f'Exchange Title: {self.title} (ID {self.id})\n'
+        else:
+            string = f'Exchange {self.id}\n'
         string += f'Found in {", ".join(settings)}\n'
-        string += f'Exchange Name: {self.name}\n'
-        string += f'Exchange Description: {self.desc}\n'
+        if self.name:
+            string += f'Exchange Name: {self.name}\n'
+        if self.desc:
+            string += f'Exchange Description: {self.desc}\n'
         string += f'Shops:\n'
         string += '\n\n'.join([str(shop) for shop in self.shops])
         return string
