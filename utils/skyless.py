@@ -174,6 +174,47 @@ class Quality:
             self.variables = None
         self.visible = jdata.get('Visible')
 
+    def __hash__(self):
+        attrs = []
+        for attr in ['allowed_on', 'available_at', 'cap', 'category', 'css', 'desc', 'difficulty', 'enhanceable', 'equippable', 'id' , 'image', 'is_slot', 'name', 'nature', 'notes', 'owner_name', 'persistent', 'plural', 'pyramid', 'qep', 'tag', 'test_type', 'visible']:
+            try:
+                attrs.append((attr, getattr(self, attr)))
+            except AttributeError:
+                continue
+        # TODO hash QLDs
+        attrs.append(('enhancements', tuple(self.enhancements)))
+        attrs.append(('qualities', tuple(self.qualities)))
+        try:
+            attrs.append(('event', self.event.id))
+        except AttributeError:
+            pass
+        try:
+            attrs.append(('slot', self.slot.id))
+        except AttributeError:
+            pass
+        return hash(tuple(attrs))
+
+    def __eq__(self, other):
+        for attr in ['allowed_on', 'available_at', 'cap', 'category', 'css', 'desc', 'difficulty', 'enhanceable', 'equippable', 'id' , 'image', 'is_slot', 'name', 'nature', 'notes', 'owner_name', 'persistent', 'plural', 'pyramid', 'qep', 'tag', 'test_type', 'visible']:
+            if hasattr(self, attr) != hasattr(other, attr):
+                return False
+            try:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+            except AttributeError:
+                continue
+        try:
+            if self.slot.id != other.slot.id:
+                return False
+        except AttributeError:
+            pass
+        try:
+            if self.event.id != other.event.id:
+                return False
+        except AttributeError:
+            pass
+        return self.changedesc == other.changedesc and self.leveldesc == other.leveldesc and self.variables == other.variables and set(self.enhancements) == set(other.enhancements) and set(self.qualities) == set(other.qualities)
+
     def __repr__(self):
         return f'Quality: {self.name}'
 
@@ -256,6 +297,27 @@ class Requirement:  #done
             self.type = 'Requirement'
         assert jdata.get('BranchVisibleWhenRequirementFailed') == jdata.get('VisibleWhenRequirementFailed')
         self.visibility = jdata.get('BranchVisibleWhenRequirementFailed', False)
+
+    def __hash__(self):
+        attrs = []
+        for attr in ['upper_bound', 'lower_bound', 'difficulty', 'type', 'test_type', 'visibility']:
+            try:
+                attrs.append((attr, getattr(self, attr)))
+            except AttributeError:
+                continue
+        attrs.append(('quality', self.quality.id))
+        return hash(tuple(attrs))
+
+    def __eq__(self, other):
+        for attr in ['upper_bound', 'lower_bound', 'difficulty', 'type', 'test_type', 'visibility']:
+            if hasattr(self, attr) != hasattr(other, attr):
+                return False
+            try:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+            except AttributeError:
+                continue
+        return self.quality.id == other.quality.id
 
     def __repr__(self):
         try:
@@ -350,6 +412,30 @@ class Storylet: #done?
                     if e[0].endswith('Event'):
                         e[1].parent = branch
 
+    def __hash__(self):
+        attrs = []
+        for attr in ['title', 'desc', 'id', 'type', 'frequency']:
+            try:
+                attrs.append((attr, getattr(self, attr)))
+            except AttributeError:
+                continue
+        attrs.append(('setting', self.setting.id))
+        attrs.append(('area', self.area.id))
+        attrs.append(('requirements', tuple(self.requirements)))
+        attrs.append(('branches', tuple(self.branches)))
+        return hash(tuple(attrs))
+
+    def __eq__(self, other):
+        for attr in ['title', 'desc', 'id', 'type', 'frequency']:
+            if hasattr(self, attr) != hasattr(other, attr):
+                return False
+            try:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+            except AttributeError:
+                continue
+        return self.setting.id == other.setting.id and self.area.id == other.area.id and set(self.requirements) == set(other.requirements) and set(self.branches) == set(other.branches)
+
     def __repr__(self):
         return f'{self.type}: "{self.title}"'
 
@@ -407,6 +493,28 @@ class Branch:   #done
             self.events['RareSuccessEventChance'] = 0
         if 'RareDefaultEvent' in self.events and 'RareDefaultEventChance' not in self.events:
             self.events['RareDefaultEventChance'] = 0
+
+    def __hash__(self):
+        attrs = []
+        for attr in ['title', 'desc', 'cost', 'button']:
+            try:
+                attrs.append((attr, getattr(self, attr)))
+            except AttributeError:
+                continue
+        attrs.append(('requirements', tuple(self.requirements)))
+        attrs.append(('events', tuple(self.events.items())))
+        return hash(tuple(attrs))
+
+    def __eq__(self, other):
+        for attr in ['title', 'desc', 'cost', 'button']:
+            if hasattr(self, attr) != hasattr(other, attr):
+                return False
+            try:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+            except AttributeError:
+                continue
+        return set(self.requirements) == set(other.requirements) and set(self.events.items()) == set(self.events.items())
     
     def __repr__(self):
         return f'"{self.title}"'
@@ -491,7 +599,41 @@ class Event:    #done
             for e in list(branch.events.items()):
                 if e[0].endswith('Event'):
                     e[1].parent = branch
-    
+
+    def __hash__(self):
+        attrs = []
+        for attr in ['id', 'title', 'desc', 'category', 'exotic_effect', 'img', 'newsetting', 'newarea']:
+            try:
+                attrs.append((attr, getattr(self, attr)))
+            except AttributeError:
+                pass
+        attrs.append(tuple(self.effects))
+        try:
+            attrs.append(('linkedevent', self.linkedevent.id))
+        except AttributeError:
+            pass
+        attrs.append(tuple(self.branches))
+        return hash(tuple(attrs))
+
+    def __eq__(self, other):
+        for attr in ['id', 'title', 'desc', 'category', 'exotic_effect', 'img', 'newsetting', 'newarea']:
+            if hasattr(self, attr) != hasattr(other, attr):
+                return False
+            try:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+            except AttributeError:
+                pass
+        try:
+            if hasattr(self, 'linkedevent') != hasattr(other, 'linkedevent'):
+                return False
+            if self.linkedevent.id != other.linkedevent.id:
+                return False
+        except:
+            pass
+        return set(self.effects) == set(other.effects) and set(self.branches) == set(other.branches)
+
+
     def __repr__(self):
         return f'Event: {render_text(self.title)}'
     
@@ -553,6 +695,28 @@ class Effect:   #done: Priority goes 3/2/1/0
         except KeyError:
             self.priority = 0
 
+    def __hash__(self):
+        attrs = []
+        for attr in ['amount', 'setTo', 'ceil', 'floor', 'priority']:
+            try:
+                attrs.append((attr, getattr(self, attr)))
+            except AttributeError:
+                continue
+        attrs.append(('quality', self.quality.id))
+        return hash(tuple(attrs))
+
+
+    def __eq__(self, other):
+        for attr in ['amount', 'setTo', 'ceil', 'floor', 'priority']:
+            if hasattr(self, attr) != hasattr(other, attr):
+                return False
+            try:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+            except AttributeError:
+                continue
+        return self.quality.id == other.quality.id
+
     def __repr__(self):
         return str(self)
 
@@ -612,6 +776,11 @@ class Setting:
         if self.exchange:
             self.exchange = Exchange.get(self.exchange)
 
+    def __hash__(self):
+        return hash((self.id, self.title, self.exchange.id))
+
+    def __eq__(self, other):
+        return self.id == other.id and self.title == other.title and self.exchange.id == other.exchange.id
 
     def __repr__(self):
         return self.title
@@ -639,6 +808,15 @@ class Area:
         self.desc = jdata.get('Description')
         self.image = jdata.get('ImageName')
         self.message = jdata.get('MoveMessage')
+
+    def __hash__(self):
+        return hash((self.id, self.name, self.desc, self.image, self.message))
+
+    def __eq__(self, other):
+        for attr in ['id', 'name', 'desc', 'image', 'message']:
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+        return True
 
     def __repr__(self):
         if self.name:
@@ -678,7 +856,16 @@ class Exchange:
         self.shops = []
         for x in jdata.get('Shops', []):
             self.shops.append(Shop(x))
-    
+
+    def __hash__(self):
+        return hash((self.id, self.name, self.title, self.desc, tuple(self.settings), tuple(self.shops)))
+
+    def __eq__(self, other):
+        for attr in ['id', 'name', 'title', 'desc']:
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+        return set(self.shops) == set(other.shops)
+
     def __repr__(self):
         if self.title:
             return f'Exchange title: {self.title} (ID {self.id})'
@@ -728,6 +915,15 @@ class Shop:
         for item in jdata.get('Availabilities'):
             self.offerings.append(Offering(item))
 
+    def __hash__(self):
+        return hash((self.id, self.name, self.desc, self.image, tuple(self.requirements), tuple(self.offerings)))
+
+    def __eq__(self, other):
+        for attr in ['id', 'name', 'desc', 'image']:
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+        return set(self.requirements) == set(self.requirements) and set(self.offerings) == set(self.offerings)
+
     def __repr__(self):
         return self.name
 
@@ -758,6 +954,28 @@ class Offering:
             self.buy = (jdata.get('Cost'), self.price)
         if 'SellPrice' in jdata:
             self.sell = (jdata.get('SellPrice'), self.price)
+
+    def __hash__(self):
+        attrs = []
+        for attr in ['id', 'buymessage', 'sellmessage', 'buy', 'sell']:
+            try:
+                attrs.append((attr, getattr(self, attr)))
+            except AttributeError:
+                continue
+        attrs.append(('item', self.item.id))
+        attrs.append(('price', self.price.id))
+        return hash(tuple(attrs))
+
+    def __eq__(self, other):
+        for attr in ['id', 'buymessage', 'sellmessage', 'buy', 'sell']:
+            if hasattr(self, attr) != hasattr(other, attr):
+                return False
+            try:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+            except AttributeError:
+                continue
+        return self.item.id == other.item.id and self.price.id == other.price.id
 
     def __repr__(self):
         return f'Item: {self.item.name}'
