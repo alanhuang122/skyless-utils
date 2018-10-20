@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json, re, sys
 from enum import Enum
-from html.parser import HTMLParser
 cache = {}
 data = {}
 
@@ -100,15 +99,23 @@ class Nature(Enum):
     Thing = 2
     X = 3
 
-parser = HTMLParser()
+def render_text(string):
+    return sub_qualities(render_html(string))
+
+def sub_qualities(expression):
+    if not isinstance(expression, str):
+        return expression
+    for x in re.findall(r'\[qb?:(\d+)\]', expression):
+        expression = expression.replace(x, Quality.get(int(x)).name)
+    for x in re.findall(r'\[qvd:(\d+)\(([^\)]+)\)\]', expression):
+        expression = expression.replace(x[0], Quality.get(int(x[0])).name)
+    return expression
 
 def render_html(string):
-    string = re.sub(r'<.{,2}?br.{,2}?>','\n', string)
-    string = re.sub(r'<.{,2}?[pP].{,2}?>','', string)
-    string = re.sub('</?em>', '_', string)
-    string = re.sub('</?[iI]>', '_', string)
-    string = re.sub('</?strong>', '*', string)
-    string = re.sub('</?b>', '*', string)
+    string = re.sub(r'(?i)<.{,2}?br.{,2}?>','\n', string)
+    string = re.sub(r'(?i)<.{,2}?[pP].{,2}?>','', string)
+    string = re.sub(r'(?i)</?(em|i)>', '_', string)
+    string = re.sub(r'(?i)</?(strong|b)>', '*', string)
     return string
 
 class Quality:
@@ -118,7 +125,7 @@ class Quality:
         self.cap = jdata.get('Cap')
         self.category = Category(jdata.get('Category', 0))
         try:
-            self.changedesc = convert_keys(json.loads(jdata.get('ChangeDescriptionText')))
+            self.changedesc = Quality.convert_keys(json.loads(jdata.get('ChangeDescriptionText')))
         except:
             self.changedesc = None
         self.css = jdata.get('CssClasses')
@@ -134,7 +141,7 @@ class Quality:
         self.image = jdata.get('Image')
         self.is_slot = jdata.get('IsSlot', False)
         try:
-            self.leveldesc = convert_keys(json.loads(jdata.get('LevelDescriptionText')))
+            self.leveldesc = Quality.convert_keys(json.loads(jdata.get('LevelDescriptionText')))
         except:
             self.leveldesc = None
         self.name = jdata.get('Name', '(no name)')
@@ -162,7 +169,7 @@ class Quality:
         self.test_type = 'Narrow' if 'DifficultyTestType' in jdata else 'Broad'
         try:
             self.variables = json.loads(jdata.get('VariableDescriptionText'))
-            self.variables = {k: convert_keys(v) for k,v in sorted(self.variables.items())}
+            self.variables = {k: Quality.convert_keys(v) for k,v in sorted(self.variables.items())}
         except:
             self.variables = None
         self.visible = jdata.get('Visible')
@@ -179,6 +186,10 @@ class Quality:
         if self.qualities:
             string += f'\nQualities Possessed: {self.qualities}'
         return string
+
+    @classmethod
+    def convert_keys(self, input):
+        return dict(sorted([(int(k), v) for k,v in input.items()]))
 
     @classmethod
     def get(self, id):
@@ -213,16 +224,6 @@ class Quality:
             return desc
         return None
 
-def sub_qualities(string):
-    for x in re.findall(r'\[qb?:(\d+)\]', string):
-        string = string.replace(x, Quality.get(int(x)).name)
-    for x in re.findall(r'\[qvd:(\d+)\(([^\)]+)\)\]', string):
-        string = string.replace(x[0], Quality.get(int(x[0])).name)
-    return string
-
-def convert_keys(input):
-    return dict(sorted([(int(k), v) for k,v in input.items()]))
-
 class Requirement:  #done
     def __init__(self, jdata):
         self.raw = jdata
@@ -231,21 +232,21 @@ class Requirement:  #done
             self.upper_bound = jdata['MaxLevel']
         except:
             try:
-                self.upper_bound = sub_qualities(jdata['MaxAdvanced'])
+                self.upper_bound = jdata['MaxAdvanced']
             except KeyError:
                 pass
         try:
             self.lower_bound = jdata['MinLevel']
         except:
             try:
-                self.lower_bound = sub_qualities(jdata['MinAdvanced'])
+                self.lower_bound = jdata['MinAdvanced']
             except KeyError:
                 pass
         try:
             self.difficulty = jdata['DifficultyLevel']
         except:
             try:
-                self.difficulty = sub_qualities(jdata['DifficultyAdvanced'])
+                self.difficulty = jdata['DifficultyAdvanced']
             except KeyError:
                 pass
         if hasattr(self, 'difficulty'):
@@ -257,41 +258,54 @@ class Requirement:  #done
         self.visibility = jdata.get('BranchVisibleWhenRequirementFailed', False)
 
     def __repr__(self):
+        try:
+            upper_bound = sub_qualities(self.upper_bound)
+        except:
+            pass
+        try:
+            lower_bound = sub_qualities(self.lower_bound)
+        except:
+            pass
+        try:
+            difficulty = sub_qualities(self.difficulty)
+        except:
+            pass
+
         string = ''
         if not self.visibility:
             string += '[Branch hidden if failed] '
         if self.type == 'Challenge':
             if self.quality.id == 138163:
-                string += f'Fortune: {50 - self.difficulty * 10}% chance'
+                string += f'Fortune: {50 - difficulty * 10}% chance'
             else:
-                string += f'{self.test_type} {self.type}: {self.quality.name} {self.difficulty}'
+                string += f'{self.test_type} {self.type}: {self.quality.name} {difficulty}'
         else:
             string += self.quality.name
             try:
-                if self.lower_bound == self.upper_bound:
-                    desc = self.quality.get_changedesc(self.lower_bound)
+                if lower_bound == upper_bound:
+                    desc = self.quality.get_changedesc(lower_bound)
                     if desc:
                         desc = f' ({desc[1]})'
-                    string += f' exactly {self.lower_bound}{desc if desc else ""}'
+                    string += f' exactly {lower_bound}{desc if desc else ""}'
                 else:
-                    lower = self.quality.get_changedesc(self.lower_bound)
+                    lower = self.quality.get_changedesc(lower_bound)
                     if lower:
                         lower = f' ({lower[1]})'
-                    upper = self.quality.get_changedesc(self.upper_bound)
+                    upper = self.quality.get_changedesc(upper_bound)
                     if upper:
                         upper = f' ({upper[1]})'
-                    string += f' [{self.lower_bound}{lower if lower else ""}-{self.upper_bound}{upper if upper else ""}]'
+                    string += f' [{lower_bound}{lower if lower else ""}-{upper_bound}{upper if upper else ""}]'
             except:
                 try:
-                    desc = self.quality.get_changedesc(self.lower_bound)
+                    desc = self.quality.get_changedesc(lower_bound)
                     if desc:
                         desc = f' ({desc[1]})'
-                    string += f' at least {self.lower_bound}{desc if desc else ""}'
+                    string += f' at least {lower_bound}{desc if desc else ""}'
                 except:
-                    desc = self.quality.get_changedesc(self.upper_bound)
+                    desc = self.quality.get_changedesc(upper_bound)
                     if desc:
                         desc = f' ({desc[1]})'
-                    string += f' no more than {self.upper_bound}{desc if desc else ""}'
+                    string += f' no more than {upper_bound}{desc if desc else ""}'
         return string
 
 def render_requirements(rl):
@@ -309,7 +323,7 @@ def render_requirements(rl):
 class Storylet: #done?
     def __init__(self, jdata, shallow=False):
         self.raw = jdata
-        self.title = parser.unescape(jdata.get('Name', '(no name)'))
+        self.title = jdata.get('Name', '(no name)')
         self.desc = jdata.get('Description', '(no description)')
         self.id = jdata['Id']
         try:
@@ -352,7 +366,7 @@ class Storylet: #done?
         except AttributeError:
             pass
         string += ' '.join(restrictions)
-        string += f'\nDescription: {sub_qualities(render_html(self.desc))}'
+        string += f'\nDescription: {render_text(self.desc)}'
         string += f'\nRequirements: {render_requirements(self.requirements)}'
         string += '\nBranches:\n{}'.format(f"\n\n{'~' * 20}\n\n".join(self.render_branches()))
         return string
@@ -373,7 +387,7 @@ class Storylet: #done?
 class Branch:   #done
     def __init__(self, jdata, parent):
         self.raw = jdata
-        self.title = parser.unescape(jdata.get('Name', '(no title)'))
+        self.title = jdata.get('Name', '(no title)')
         self.id = jdata['Id']
         self.parent = parent
         self.desc = jdata.get('Description', '(no description)')
@@ -400,13 +414,34 @@ class Branch:   #done
     def __str__(self):
         string = f'Branch Title: "{self.title}"'
         if self.desc:
-            string += f'\nDescription: {sub_qualities(render_html(self.desc))}'
+            string += f'\nDescription: {render_text(self.desc)}'
         string += f'\nRequirements: {render_requirements(self.requirements)}'
         if self.cost != 1:
             string += f'\nAction cost: {self.cost}'
-        string += f'\n{render_events(self.events)}'
+        string += f'\n{self.render_events()}'
         return string
     
+    def render_events(self):
+        event_dict = self.events
+        strings = []
+        for type in ['SuccessEvent', 'RareSuccessEvent', 'DefaultEvent', 'RareDefaultEvent']:
+            if type in event_dict:
+                event = event_dict[type]
+                title = render_text(event.title)
+                if type == 'SuccessEvent':
+                    string = f'Success: "{title}"'
+                elif type == 'RareSuccessEvent':
+                    string = f'Rare Success: "{title}" ({event_dict["RareSuccessEventChance"]}% chance)'
+                elif type == 'DefaultEvent':
+                    string = f'{"Failure" if "SuccessEvent" in event_dict else "Event"}: "{title}"'
+                else:
+                    string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{title}" ({event_dict["RareDefaultEventChance"]}% chance)'
+                string += f'\n{render_text(event.desc)}\nEffects: {event.list_effects()}'
+                if event.branches:
+                    string += '\nSub-branches:\n{}'.format(f"\n\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
+                strings.append(string)
+        return f'\n\n{"-" * 20}\n\n'.join(strings)
+
     @classmethod
     def get(self, jdata, parent=None):
         key = f'branches:{jdata["Id"]}'
@@ -421,7 +456,7 @@ class Event:    #done
         self.raw = jdata
         self.id = jdata['Id']
         self.parent = None        
-        self.title = parser.unescape(jdata.get('Name', '(no title)'))
+        self.title = jdata.get('Name', '(no title)')
         self.desc = jdata.get('Description', '(no description)')
         self.category = jdata.get('Category')
         self.effects = []
@@ -458,14 +493,14 @@ class Event:    #done
                     e[1].parent = branch
     
     def __repr__(self):
-        return f'Event: {self.title}'
+        return f'Event: {render_text(self.title)}'
     
     def __str__(self):
-        return f'Title: "{self.title}"\nDescription: {sub_qualities(render_html(self.desc))}\nEffects: {self.list_effects()}\n'
+        return f'Title: "{render_text(self.title)}"\nDescription: {render_text(self.desc)}\nEffects: {self.list_effects()}\n'
     
     def list_effects(self):
         effects = []
-        if self.effects != []:
+        if self.effects:
             effects.append(f'[{", ".join([str(e) for e in self.effects])}]')
         if self.exotic_effect:
             effects.append(f'Exotic effect: {self.exotic_effect}')
@@ -486,25 +521,6 @@ class Event:    #done
             cache[key] = Event(jdata)
             return cache[key]
 
-def render_events(event_dict):
-    strings = []
-    for type in ['SuccessEvent', 'RareSuccessEvent', 'DefaultEvent', 'RareDefaultEvent']:
-        if type in event_dict:
-            event = event_dict[type]
-            if type == 'SuccessEvent':
-                string = f'Success: "{event.title}"'
-            elif type == 'RareSuccessEvent':
-                string = f'Rare Success: "{event.title}" ({event_dict["RareSuccessEventChance"]}% chance)'
-            elif type == 'DefaultEvent':
-                string = f'{"Failure" if "SuccessEvent" in event_dict else "Event"}: "{event.title}"'
-            else:
-                string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{event.title}" ({event_dict["RareDefaultEventChance"]}% chance)'
-            string += f'\n{sub_qualities(render_html(event.desc))}\nEffects: {event.list_effects()}'
-            if event.branches:
-                string += '\nSub-branches:\n{}'.format(f"\n\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
-            strings.append(string)
-    return f'\n\n{"-" * 20}\n\n'.join(strings)
-
 class Effect:   #done: Priority goes 3/2/1/0
     def __init__(self, jdata):
         self.raw = jdata
@@ -514,14 +530,14 @@ class Effect:   #done: Priority goes 3/2/1/0
             self.amount = jdata['Level']
         except:
             try:
-                self.amount = sub_qualities(jdata['ChangeByAdvanced'])
+                self.amount = jdata['ChangeByAdvanced']
             except KeyError:
                 pass
         try:
             self.setTo = jdata['SetToExactly']
         except:
             try:
-                self.setTo = sub_qualities(jdata['SetToExactlyAdvanced'])
+                self.setTo = jdata['SetToExactlyAdvanced']
             except KeyError:
                 pass
         try:
@@ -538,6 +554,18 @@ class Effect:   #done: Priority goes 3/2/1/0
             self.priority = 0
 
     def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        try:
+            amount = sub_qualities(self.amount)
+        except:
+            pass
+        try:
+            setTo = sub_qualities(self.setTo)
+        except:
+            pass
+
         if not hasattr(self, 'setTo') and not hasattr(self, 'amount'):
             return f'{self.quality.name} - no effect'
         try:
@@ -554,24 +582,24 @@ class Effect:   #done: Priority goes 3/2/1/0
             limits += ' (force equipped)'
                 
         try:
-            if self.quality.changedesc and isinstance(self.setTo, int):
-                desc = self.quality.get_changedesc(self.setTo)
+            if self.quality.changedesc and isinstance(setTo, int):
+                desc = self.quality.get_changedesc(setTo)
                 try:
-                    return f'{self.quality.name} (set to {self.setTo} ({desc[1]}){limits})'
+                    return f'{self.quality.name} (set to {setTo} ({desc[1]}){limits})'
                 except TypeError:
                     pass
-            return f'{self.quality.name} (set to {self.setTo}{limits})'
+            return f'{self.quality.name} (set to {setTo}{limits})'
         except:
             if self.quality.nature == 2 or not self.quality.pyramid:
                 try:
-                    return f'{self.amount:+} x {self.quality.name}{limits}'
+                    return f'{amount:+} x {self.quality.name}{limits}'
                 except:
-                    return f'{"" if self.amount.startswith("-") else "+"}{self.amount} {self.quality.name}{limits}'
+                    return f'{"" if amount.startswith("-") else "+"}{amount} {self.quality.name}{limits}'
             else:
                 try:
-                    return f'{self.quality.name} ({self.amount:+} cp{limits})'
+                    return f'{self.quality.name} ({amount:+} cp{limits})'
                 except:
-                    return f'{self.quality.name} ({"" if self.amount.startswith("-") else ""}{self.amount} cp{limits})'
+                    return f'{self.quality.name} ({"" if amount.startswith("-") else ""}{amount} cp{limits})'
 
 class Setting:
     def __init__(self, jdata):
@@ -580,15 +608,18 @@ class Setting:
         self.title = jdata.get('Name')
         self.persona = jdata.get('Personae')
 
-        self.exchange = jdata.get('Exchange')
+        self.exchange = jdata.get('Exchange', {}).get('Id')
         if self.exchange:
-            self.exchange = Exchange(self.exchange)
+            self.exchange = Exchange.get(self.exchange)
+
 
     def __repr__(self):
         return self.title
 
     def __str__(self):
         string = f'Setting name: {self.title} (Id {self.id})'
+        if self.exchange:
+            string += f'\n{repr(self.exchange)}'
         return string
 
     @classmethod
@@ -604,19 +635,28 @@ class Area:
     def __init__(self, jdata):
         self.raw = jdata
         self.id = jdata.get('Id')
-        self.name = jdata.get('Name', '(no name)')
-        self.desc = jdata.get('Description', '(no description)')
-        self.image = jdata.get('ImageName', '(no image)')
-        self.message = jdata.get('MoveMessage', '(no move message)')
+        self.name = jdata.get('Name')
+        self.desc = jdata.get('Description')
+        self.image = jdata.get('ImageName')
+        self.message = jdata.get('MoveMessage')
 
     def __repr__(self):
-        return f'{self.name} (Id {self.id})'
+        if self.name:
+            return f'Area: {self.name} (Id {self.id})'
+        return f'Area {self.id}'
 
     def __str__(self):
-        string = f'{self.name} (Id {self.id})'
-        string += f'\nDescription: {self.desc}'
-        string += f'\n{self.message}'
-        return string
+        if self.name:
+            parts = [f'Area: {self.name} (Id {self.id})']
+        else:
+            parts = [f'Area {self.id}']
+        if self.desc:
+            parts.append(f'Description: {self.desc}')
+        if self.message:
+            parts.append(f'Move message: {self.message}')
+        if self.image:
+            parts.append(f'Image: {self.image}')
+        return '\n'.join(parts)
 
     @classmethod
     def get(self, id):
@@ -641,21 +681,23 @@ class Exchange:
     
     def __repr__(self):
         if self.title:
-            return f'Exchange Title: {self.title} (ID {self.id})'
+            return f'Exchange title: {self.title} (ID {self.id})'
+        elif self.name:
+            return f'Exchange name: {self.name} (ID {self.id})'
         else:
             return f'Exchange {self.id}'
 
     def __str__(self):
         settings = [Setting.get(s).title for s in self.settings]
         if self.title:
-            string = f'Exchange Title: {self.title} (ID {self.id})\n'
+            string = f'Exchange title: {self.title} (ID {self.id})\n'
         else:
             string = f'Exchange {self.id}\n'
         string += f'Found in {", ".join(settings)}\n'
         if self.name:
-            string += f'Exchange Name: {self.name}\n'
+            string += f'Exchange name: {self.name}\n'
         if self.desc:
-            string += f'Exchange Description: {self.desc}\n'
+            string += f'Exchange description: {self.desc}\n'
         string += f'Shops:\n'
         string += '\n\n'.join([str(shop) for shop in self.shops])
         return string
@@ -690,7 +732,7 @@ class Shop:
         return self.name
 
     def __str__(self):
-        string = f'Shop Name: {self.name}\n'
+        string = f'Shop name: {self.name}\n'
         string += f'Description: {self.desc}\n'
         string += f'Requirements: {render_requirements(self.requirements)}\n'
         string += f'Items:\n'
@@ -725,15 +767,15 @@ class Offering:
         try:
             string += f'\nSells for {self.buy[0]} x {self.buy[1].name}'
             if self.buymessage != '(no message)':
-                string += f'\nPurchase Message: {self.buymessage}'
+                string += f'\nPurchase message: {self.buymessage}'
         except AttributeError:
             if self.buymessage != '(no message)':
-                string += f'\nPurchase Message: {self.buymessage} (cannot be bought)'
+                string += f'\nPurchase message: {self.buymessage} (cannot be bought)'
         try:
             string += f'\nPurchases for {self.sell[0]} x {self.sell[1].name}'
             if self.sellmessage != '(no message)':
-                string += f'\nSale Message: {self.sellmessage}'
+                string += f'\nSale message: {self.sellmessage}'
         except AttributeError:
             if self.sellmessage != '(no message)':
-                string += f'\nSale Message: {self.sellmessage} (cannot be sold)'
+                string += f'\nSale message: {self.sellmessage} (cannot be sold)'
         return string
