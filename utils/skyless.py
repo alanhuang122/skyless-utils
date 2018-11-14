@@ -396,9 +396,6 @@ class Storylet: #done?
             self.area = Area.get(jdata['LimitedToArea']['Id'])
         except KeyError:
             self.area = None
-        self.type = 'Storylet' if jdata['Deck']['Name'] == 'Always' else 'Card' if jdata['Deck']['Name'] == 'Sometimes' else 'Unknown type'
-        if self.type == 'Card':
-            self.frequency = jdata['Distribution']
         self.requirements = []
         for r in jdata['QualitiesRequired']:
             self.requirements.append(Requirement(r))
@@ -414,7 +411,7 @@ class Storylet: #done?
 
     def __hash__(self):
         attrs = []
-        for attr in ['title', 'desc', 'id', 'type', 'frequency']:
+        for attr in ['title', 'desc', 'id']:
             try:
                 attrs.append((attr, getattr(self, attr)))
             except AttributeError:
@@ -426,7 +423,7 @@ class Storylet: #done?
         return hash(tuple(attrs))
 
     def __eq__(self, other):
-        for attr in ['title', 'desc', 'id', 'type', 'frequency']:
+        for attr in ['title', 'desc', 'id']:
             if hasattr(self, attr) != hasattr(other, attr):
                 return False
             try:
@@ -437,11 +434,11 @@ class Storylet: #done?
         return self.setting.id == other.setting.id and self.area.id == other.area.id and set(self.requirements) == set(other.requirements) and set(self.branches) == set(other.branches)
 
     def __repr__(self):
-        return f'{self.type}: "{self.title}"'
+        return f'Storylet: "{self.title}"'
 
     def __str__(self):
         #_,c = os.popen('stty size', u'r').read().split()
-        string = f'{self.type} Title: "{self.title}"\n'
+        string = f'Storylet Title: "{self.title}"\n'
         restrictions = []
         try:
             restrictions.append(f'Appears in {self.setting.title}')
