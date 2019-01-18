@@ -107,8 +107,16 @@ def sub_qualities(expression):
         return expression
     for x in re.findall(r'\[qb?:(\d+)\]', expression):
         expression = expression.replace(x, Quality.get(int(x)).name)
-    for x in re.findall(r'\[qvd:(\d+)\(([^\)]+)\)\]', expression):
-        expression = expression.replace(x[0], Quality.get(int(x[0])).name)
+    for x in re.findall(r'(\[qvd:(\d+)\(([^\)]+)\)\])', expression):
+        quality = Quality.get(int(x[1]))
+        if re.match(r'\[qvd:\d+\([^\)]+\)\]', expression):
+            expression = expression.replace(x[1], quality.name)
+            variable = quality.variables[x[2]]
+            for key in variable:
+                expression += f'\n{key}: {variable[key]}\n'
+        else:
+            expression = expression.replace(x[0], f'\n{x[0]} {quality.variables[x[2]]}\n')
+            expression = expression.replace(x[1], quality.name)
     return expression
 
 def render_html(string):
