@@ -276,6 +276,7 @@ class Quality:
 class Requirement:  #done
     def __init__(self, jdata):
         self.raw = jdata
+        self.id = jdata['Id']
         self.quality = Quality.get(jdata['AssociatedQuality']['Id'])
         try:
             self.upper_bound = jdata['MaxLevel']
@@ -308,7 +309,7 @@ class Requirement:  #done
 
     def __hash__(self):
         attrs = []
-        for attr in ['upper_bound', 'lower_bound', 'difficulty', 'type', 'test_type', 'visibility']:
+        for attr in ['id', 'upper_bound', 'lower_bound', 'difficulty', 'type', 'test_type', 'visibility']:
             try:
                 attrs.append((attr, getattr(self, attr)))
             except AttributeError:
@@ -317,7 +318,7 @@ class Requirement:  #done
         return hash(tuple(attrs))
 
     def __eq__(self, other):
-        for attr in ['upper_bound', 'lower_bound', 'difficulty', 'type', 'test_type', 'visibility']:
+        for attr in ['id', 'upper_bound', 'lower_bound', 'difficulty', 'type', 'test_type', 'visibility']:
             if hasattr(self, attr) != hasattr(other, attr):
                 return False
             try:
@@ -439,7 +440,7 @@ class Storylet: #done?
                     return False
             except AttributeError:
                 continue
-        return self.setting.id == other.setting.id and self.area.id == other.area.id and set(self.requirements) == set(other.requirements) and set(self.branches) == set(other.branches)
+        return getattr(self.setting, 'id', None) == getattr(other.setting, 'id', None) and getattr(self.area, 'id', None) == getattr(other.area, 'id', None) and set(self.requirements) == set(other.requirements) and set(self.branches) == set(other.branches)
 
     def __repr__(self):
         return f'Storylet: "{self.title}"'
@@ -671,6 +672,7 @@ class Event:    #done
 class Effect:   #done: Priority goes 3/2/1/0
     def __init__(self, jdata):
         self.raw = jdata
+        self.id = jdata['Id']
         self.quality = Quality.get(jdata['AssociatedQuality']['Id'])
         self.equip = 'ForceEquip' in jdata
         try:
@@ -702,7 +704,7 @@ class Effect:   #done: Priority goes 3/2/1/0
 
     def __hash__(self):
         attrs = []
-        for attr in ['amount', 'setTo', 'ceil', 'floor', 'priority']:
+        for attr in ['id', 'amount', 'setTo', 'ceil', 'floor', 'priority']:
             try:
                 attrs.append((attr, getattr(self, attr)))
             except AttributeError:
@@ -712,7 +714,7 @@ class Effect:   #done: Priority goes 3/2/1/0
 
 
     def __eq__(self, other):
-        for attr in ['amount', 'setTo', 'ceil', 'floor', 'priority']:
+        for attr in ['id' 'amount', 'setTo', 'ceil', 'floor', 'priority']:
             if hasattr(self, attr) != hasattr(other, attr):
                 return False
             try:
@@ -785,7 +787,7 @@ class Setting:
         return hash((self.id, self.title, self.exchange.id))
 
     def __eq__(self, other):
-        return self.id == other.id and self.title == other.title and self.exchange.id == other.exchange.id
+        return self.id == other.id and self.title == other.title and getattr(self.exchange, "id", None) == getattr(other.exchange, "id", None)
 
     def __repr__(self):
         return self.title
