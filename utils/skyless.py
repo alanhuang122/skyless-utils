@@ -447,7 +447,7 @@ class Storylet: #done?
 
     def __str__(self):
         #_,c = os.popen('stty size', u'r').read().split()
-        string = f'Storylet Title: "{self.title}"\n'
+        string = f'Storylet Title: "{render_text(self.title)}"\n'
         restrictions = []
         try:
             restrictions.append(f'Appears in {self.setting.title}')
@@ -526,7 +526,7 @@ class Branch:   #done
         return f'"{self.title}"'
     
     def __str__(self):
-        string = f'Branch Title: "{self.title}"'
+        string = f'Branch Title: "{render_text(self.title)}"'
         if self.desc:
             string += f'\nDescription: {render_text(self.desc)}'
         string += f'\nRequirements: {render_requirements(self.requirements)}'
