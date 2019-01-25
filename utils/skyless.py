@@ -1010,3 +1010,169 @@ class Offering:
             if self.sellmessage != '(no message)':
                 string += f'\nSale message: {self.sellmessage} (cannot be sold)'
         return string
+
+class Prospect:
+    def __init__(self, jdata):
+        self.raw = jdata
+        self.id = jdata.get('Id')
+        self.setting = Setting.get(jdata.get('Setting', {}).get('Id'))
+        self.name = jdata.get('Name', '(no name)')
+        self.desc = jdata.get('Description', '(no description)')
+        self.tag = jdata.get('Tags')
+        self.requirements = []
+        for r in jdata.get('QualitiesRequired'):
+            self.requirements.append(Requirement(r))
+        self.effects = []
+        for e in jdata.get('QualitiesAffected'):
+            self.effects.append(Effect(e))
+        try:
+            self.item = Quality.get(jdata['Request']['Id'])
+        except:
+            self.item = None
+        try:
+            self.price = int(jdata.get('Payment'))
+        except:
+            self.price = None
+        self.quantity = jdata.get('Demand')
+        self.completions = [Completion(c, self) for c in jdata.get('Completions', [])]
+
+    def __hash__(self): # INCORRECT
+        attrs = []
+        for attr in ['id', 'buymessage', 'sellmessage', 'buy', 'sell']:
+            try:
+                attrs.append((attr, getattr(self, attr)))
+            except AttributeError:
+                continue
+        attrs.append(('item', self.item.id))
+        attrs.append(('price', self.price.id))
+        return hash(tuple(attrs))
+
+    def __eq__(self, other):    # INCORRECT
+        for attr in ['id', 'buymessage', 'sellmessage', 'buy', 'sell']:
+            if hasattr(self, attr) != hasattr(other, attr):
+                return False
+            try:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+            except AttributeError:
+                continue
+        return self.item.id == other.item.id and self.price.id == other.price.id
+
+    def __repr__(self):
+        return f'Prospect: {self.name}'
+
+    def __str__(self):
+        parts = [f'Prospect: {self.name}',
+                 f'Destination: {self.setting.title}',
+                 f'Description: {render_text(self.desc)}',
+                 f'Requirements: {render_requirements(self.requirements)}',
+                 f'Effects when accepted: {self.effects}',
+                 f'Item requested: {self.quantity} x {self.item.name}',
+                 f'Buys for {self.price} Sovereigns',
+                 f'Bonus:',
+                 "\n\n".join([str(c) for c in self.completions])]
+        return '\n'.join(parts)
+
+    @classmethod
+    def get(self, id):
+        key = f'prospects:{id}'
+        if key in cache:
+            return cache[key]
+        else:
+            cache[key] = Prospect(data[key])
+            return cache[key]
+
+class Completion:
+    def __init__(self, jdata, parent):
+        self.raw = jdata
+        self.parent = parent
+        self.id = jdata.get('Id')
+        self.message = jdata.get('SatisfactionMessage')
+        self.requirements = []
+        for r in jdata.get('QualitiesRequired'):
+            self.requirements.append(Requirement(r))
+        self.effects = []
+        for e in jdata.get('QualitiesAffected'):
+            self.effects.append(Effect(e))
+
+    def __hash__(self):
+        attrs = (self.id,
+                 self.message,
+                 tuple(self.requirements),
+                 tuple(self.effects))
+        return hash(attrs)
+
+    def __eq__(self, other):
+        return self.id == other.id and self.message == other.message and self.requirements == other.requirements and self.effects == other.effects
+
+    def __repr__(self):
+        return f"Prospect: {self.parent.name} - Completion"
+
+    def __str__(self):
+        parts = [f'Description: {self.message}',
+                 f'Requirements: {render_requirements(self.requirements)}',
+                 f'Effects: {self.effects}']
+        return '\n'.join(parts)
+
+class Bargain:
+    def __init__(self, jdata):
+        self.raw = jdata
+        self.id = jdata.get('Id')
+        self.name = jdata.get('Name', '(no name)')
+        self.teaser = jdata.get('Teaser', '(no teaser)')
+        self.desc = jdata.get('Description', '(no description)')
+        self.tag = jdata.get('Tags')
+        self.requirements = []
+        for r in jdata.get('QualitiesRequired'):
+            self.requirements.append(Requirement(r))
+        try:
+            self.item = Quality.get(jdata['Offer']['Id'])
+        except:
+            self.item = None
+        try:
+            self.price = int(jdata.get('Price'))
+        except:
+            self.price = None
+        self.quantity = jdata.get('Stock')
+
+    def __hash__(self): # INCORRECT
+        attrs = []
+        for attr in ['id', 'buymessage', 'sellmessage', 'buy', 'sell']:
+            try:
+                attrs.append((attr, getattr(self, attr)))
+            except AttributeError:
+                continue
+        attrs.append(('item', self.item.id))
+        attrs.append(('price', self.price.id))
+        return hash(tuple(attrs))
+
+    def __eq__(self, other):    # INCORRECT
+        for attr in ['id', 'buymessage', 'sellmessage', 'buy', 'sell']:
+            if hasattr(self, attr) != hasattr(other, attr):
+                return False
+            try:
+                if getattr(self, attr) != getattr(other, attr):
+                    return False
+            except AttributeError:
+                continue
+        return self.item.id == other.item.id and self.price.id == other.price.id
+
+    def __repr__(self):
+        return f'Bargain: {self.name}'
+
+    def __str__(self):
+        parts = [f'Bargain: {self.name} (Tag {self.tag})',
+                 f'Description: {render_text(self.desc)}',
+                 f'Requirements: {render_requirements(self.requirements)}',
+                 f'Item offered: {self.quantity} x {self.item.name if self.item else "None"}',
+                 f'Sells for {self.price} Sovereigns']
+        return '\n'.join(parts)
+
+    @classmethod
+    def get(self, id):
+        key = f'bargains:{id}'
+        if key in cache:
+            return cache[key]
+        else:
+            cache[key] = Bargain(data[key])
+            return cache[key]
