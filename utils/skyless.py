@@ -168,7 +168,7 @@ class Quality:
         except TypeError:
             self.parent = None
         self.persistent = 'Persistent' in jdata
-        self.plural = jdata.get('PluralName')
+        self.plural = jdata.get('PluralName') or self.name
         self.pyramid = 'UsePyramidNumbers' in jdata
         self.qep = jdata.get('QEffectPriority')
         self.qualities = []
@@ -362,26 +362,26 @@ class Requirement:  #done
                 if lower_bound == upper_bound:
                     desc = self.quality.get_leveldesc(lower_bound) or self.quality.get_changedesc(lower_bound)
                     if desc:
-                        desc = f' ({desc[1]})'
+                        desc = f' ({render_text(desc[1])})'
                     string += f' exactly {lower_bound}{desc if desc else ""}'
                 else:
                     lower = self.quality.get_leveldesc(lower_bound) or self.quality.get_changedesc(lower_bound)
                     if lower:
-                        lower = f' ({lower[1]})'
+                        lower = f' ({render_text(lower[1])})'
                     upper = self.quality.get_leveldesc(upper_bound) or self.quality.get_changedesc(upper_bound)
                     if upper:
-                        upper = f' ({upper[1]})'
+                        upper = f' ({render_text(upper[1])})'
                     string += f' [{lower_bound}{lower if lower else ""}-{upper_bound}{upper if upper else ""}]'
             except:
                 try:
                     desc = self.quality.get_leveldesc(lower_bound) or self.quality.get_changedesc(lower_bound)
                     if desc:
-                        desc = f' ({desc[1]})'
+                        desc = f' ({render_text(desc[1])})'
                     string += f' at least {lower_bound}{desc if desc else ""}'
                 except:
                     desc = self.quality.get_leveldesc(upper_bound) or self.quality.get_changedesc(upper_bound)
                     if desc:
-                        desc = f' ({desc[1]})'
+                        desc = f' ({render_text(desc[1])})'
                     string += f' no more than {upper_bound}{desc if desc else ""}'
         return string
 
@@ -655,7 +655,7 @@ class Event:    #done
     def list_effects(self):
         effects = []
         if self.effects:
-            effects.append(f'[{", ".join([str(e) for e in self.effects])}]')
+            effects.append(str(self.effects))
         if self.exotic_effect:
             effects.append(f'Exotic effect: {self.exotic_effect}')
         if self.newsetting:
@@ -762,7 +762,7 @@ class Effect:   #done: Priority goes 3/2/1/0
             if self.quality.changedesc and isinstance(setTo, int):
                 desc = self.quality.get_changedesc(setTo)
                 try:
-                    return f'{self.quality.name} (set to {setTo} ({desc[1]}){limits})'
+                    return f'{self.quality.name} (set to {setTo} ({render_text(desc[1])}){limits})'
                 except TypeError:
                     pass
             return f'{self.quality.name} (set to {setTo}{limits})'
