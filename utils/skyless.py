@@ -105,9 +105,9 @@ def render_text(string):
 def sub_qualities(expression):
     if not isinstance(expression, str):
         return expression
-    for x in re.findall(r'\[qb?:(\d+)\]', expression):
+    for x in set(re.findall(r'\[qb?:(\d+)\]', expression)):
         expression = expression.replace(x, Quality.get(int(x)).name)
-    for x in re.findall(r'(\[qvd:(\d+)\(([^\)]+)\)\])', expression):
+    for x in set(re.findall(r'(\[qvd:(\d+)\(([^\)]+)\)\])', expression)):    # matches [qvd:123456(QVD key)]
         quality = Quality.get(int(x[1]))
         if quality.variables == None:
             continue
@@ -118,7 +118,11 @@ def sub_qualities(expression):
         else:
             text = 'None'
         expression = expression.replace(x[0], f'{x[0]}\n{text}\n')
-        expression = expression.replace(x[1], quality.name, 1)
+        expression = expression.replace(x[1], quality.name)
+    for x in set(re.findall(r'(\[dir:([^\]]+)\])', expression)):
+        location_name = data['locations'].get(x[1], '(unknown location)')
+        replacement = f'[Directions to {location_name}]'
+        expression = expression.replace(x[0], replacement)
     return expression
 
 def render_html(string):
@@ -130,15 +134,15 @@ def render_html(string):
 
 class Quality:
     def __init__(self, jdata):
+        # Unused keys: CssClasses, PyramidNumberIncreaseLimit (always 50), DescendingChangeDescriptionText (skyless.py only cares about setTo values)
         self.allowed_on = AllowedOn(jdata.get('AllowedOn'))
         self.available_at = jdata.get('AvailableAt')
-        self.cap = jdata.get('Cap')
+        self.cap = jdata.get('CapAdvanced') or jdata.get('Cap')
         self.category = Category(jdata.get('Category', 0))
         try:
             self.changedesc = Quality.convert_keys(json.loads(jdata.get('ChangeDescriptionText')))
         except:
             self.changedesc = None
-        self.css = jdata.get('CssClasses')
         self.desc = jdata.get('Description', '(no description)')
         self.difficulty = jdata.get('DifficultyScaler')
         self.enhanceable = jdata.get('IsEnhanceable', False)

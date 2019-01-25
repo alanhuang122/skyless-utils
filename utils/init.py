@@ -9,5 +9,8 @@ with open('skyless.dat') as f:
         temp = json.loads(line)
         data[temp['key']] = temp['value']
 
+with open('../locations.json') as f:
+    data['locations'] = json.load(f)
+
 import skyless
 skyless.data=data
