@@ -148,7 +148,7 @@ class Quality:
             self.changedesc = Quality.convert_keys(json.loads(jdata.get('ChangeDescriptionText')))
         except:
             self.changedesc = None
-        self.desc = jdata.get('Description', '(no description)')
+        self.desc = jdata.get('Description') or '(no description)'
         self.difficulty = jdata.get('DifficultyScaler')
         self.enhanceable = jdata.get('IsEnhanceable', False)
         self.enhancements = []
@@ -163,7 +163,7 @@ class Quality:
             self.leveldesc = Quality.convert_keys(json.loads(jdata.get('LevelDescriptionText')))
         except:
             self.leveldesc = None
-        self.name = jdata.get('Name', '(no name)')
+        self.name = jdata.get('Name') or '(no name)'
         self.nature = Nature(jdata.get('Nature', 0))
         self.notes = jdata.get('Notes')
         # OwnQualitiesCount == len(QualitiesPossessedList)
@@ -407,13 +407,16 @@ def render_requirements(rl):
             challenges.append(str(r))
     if not reqs and not challenges:
         return 'None'
-    return ', '.join(reqs) + '\n' + '\n'.join(challenges)
+    string = ', '.join(reqs)
+    if challenges:
+        string += '\n' + '\n'.join(challenges)
+    return string
 
 class Storylet: #done?
     def __init__(self, jdata, shallow=False):
         self.raw = jdata
-        self.title = jdata.get('Name', '(no name)')
-        self.desc = jdata.get('Description', '(no description)')
+        self.title = jdata.get('Name') or '(no name)'
+        self.desc = jdata.get('Description') or '(no description)'
         self.id = jdata['Id']
         try:
             self.setting = Setting.get(jdata['Setting']['Id'])
@@ -475,10 +478,10 @@ class Storylet: #done?
             restrictions.append(f'Limited to area: {self.area.name}')
         except AttributeError:
             pass
-        string += ' '.join(restrictions)
-        string += f'\nDescription: {render_text(self.desc)}'
-        string += f'\nRequirements: {render_requirements(self.requirements)}'
-        string += '\nBranches:\n{}'.format(f"\n\n{'~' * 20}\n\n".join(self.render_branches()))
+        string += ' '.join(restrictions) + '\n'
+        string += f'Description: {render_text(self.desc)}\n'
+        string += f'Requirements: {render_requirements(self.requirements)}\n\n'
+        string += 'Branches:\n{}'.format(f"\n{'~' * 20}\n\n".join(self.render_branches()))
         return string
     
     def render_branches(self):
@@ -497,10 +500,10 @@ class Storylet: #done?
 class Branch:   #done
     def __init__(self, jdata, parent):
         self.raw = jdata
-        self.title = jdata.get('Name', '(no title)')
+        self.title = jdata.get('Name') or '(no title)'
         self.id = jdata['Id']
         self.parent = parent
-        self.desc = jdata.get('Description', '(no description)')
+        self.desc = jdata.get('Description') or '(no description)'
         self.cost = jdata.get('ActionCost', 1)
         self.button = jdata.get('ButtonText', 'Go')
         self.requirements = []
@@ -547,7 +550,7 @@ class Branch:   #done
         string = f'Branch Title: "{render_text(self.title)}"'
         if self.desc:
             string += f'\nDescription: {render_text(self.desc)}'
-        string += f'\nRequirements: {render_requirements(self.requirements)}'
+        string += f'\nRequirements: {render_requirements(self.requirements)}\n'
         if self.cost != 1:
             string += f'\nAction cost: {self.cost}'
         string += f'\n{self.render_events()}'
@@ -561,18 +564,18 @@ class Branch:   #done
                 event = event_dict[type]
                 title = render_text(event.title)
                 if type == 'SuccessEvent':
-                    string = f'Success: "{title}"'
+                    string = f'Success: "{render_text(title)}"'
                 elif type == 'RareSuccessEvent':
-                    string = f'Rare Success: "{title}" ({event_dict["RareSuccessEventChance"]}% chance)'
+                    string = f'Rare Success: "{render_text(title)}" ({event_dict["RareSuccessEventChance"]}% chance)'
                 elif type == 'DefaultEvent':
-                    string = f'{"Failure" if "SuccessEvent" in event_dict else "Event"}: "{title}"'
+                    string = f'{"Failure" if "SuccessEvent" in event_dict else "Event"}: "{render_text(title)}"'
                 else:
-                    string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{title}" ({event_dict["RareDefaultEventChance"]}% chance)'
-                string += f'\n{render_text(event.desc)}\nEffects: {event.list_effects()}'
+                    string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{render_text(title)}" ({event_dict["RareDefaultEventChance"]}% chance)'
+                string += f'\n{render_text(event.desc)}\n\nEffects: {event.list_effects()}'
                 if event.branches:
-                    string += '\nSub-branches:\n{}'.format(f"\n\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
+                    string += '\nSub-branches:\n{}'.format(f"\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
                 strings.append(string)
-        return f'\n\n{"-" * 20}\n\n'.join(strings)
+        return f'\n{"-" * 20}\n\n'.join(strings)
 
     @classmethod
     def get(self, jdata, parent=None):
@@ -588,8 +591,8 @@ class Event:    #done
         self.raw = jdata
         self.id = jdata['Id']
         self.parent = None        
-        self.title = jdata.get('Name', '(no title)')
-        self.desc = jdata.get('Description', '(no description)')
+        self.title = jdata.get('Name') or '(no title)'
+        self.desc = jdata.get('Description') or '(no description)'
         self.category = jdata.get('Category')
         self.effects = []
         for e in jdata['QualitiesAffected']:
@@ -675,7 +678,7 @@ class Event:    #done
         if self.newarea:
             effects.append(f'Move to new area: {self.newarea}')
         if self.linkedevent:
-            effects.append(f'Linked event: "{self.linkedevent.title}" (Id {self.linkedevent.id})')
+            effects.append(f'Linked event: "{render_text(self.linkedevent.title)}" (Id {self.linkedevent.id})')
         return '\n'.join(effects)
         
     @classmethod
@@ -930,8 +933,8 @@ class Shop:
     def __init__(self, jdata):
         self.raw = jdata
         self.id = jdata.get('Id')
-        self.name = jdata.get('Name', '(no name)')
-        self.desc = jdata.get('Description', '(no description)')
+        self.name = jdata.get('Name') or '(no name)'
+        self.desc = jdata.get('Description') or '(no description)'
         self.image = jdata.get('Image')
         self.requirements = []
         for r in jdata.get('QualitiesRequired', []):
@@ -969,10 +972,10 @@ class Offering:
         self.id = jdata.get('Id')
         self.item = Quality.get(jdata.get('Quality', {}).get('Id'))
         self.price = Quality.get(jdata.get('PurchaseQuality', {}).get('Id'))
-        self.buymessage = jdata.get('BuyMessage', '(no message)')
+        self.buymessage = jdata.get('BuyMessage') or '(no message)'
         if not self.buymessage.replace('"',''):
             self.buymessage = '(no message)'
-        self.sellmessage = jdata.get('SellMessage', '(no message)')
+        self.sellmessage = jdata.get('SellMessage') or '(no message)'
         if not self.sellmessage.replace('"',''):
             self.sellmessage = '(no message)'
         if 'Cost' in jdata:
@@ -1028,8 +1031,8 @@ class Prospect:
         self.raw = jdata
         self.id = jdata.get('Id')
         self.setting = Setting.get(jdata.get('Setting', {}).get('Id'))
-        self.name = jdata.get('Name', '(no name)')
-        self.desc = jdata.get('Description', '(no description)')
+        self.name = jdata.get('Name') or '(no name)'
+        self.desc = jdata.get('Description') or '(no description)'
         self.tag = jdata.get('Tags')
         self.requirements = []
         for r in jdata.get('QualitiesRequired'):
@@ -1130,9 +1133,9 @@ class Bargain:
     def __init__(self, jdata):
         self.raw = jdata
         self.id = jdata.get('Id')
-        self.name = jdata.get('Name', '(no name)')
-        self.teaser = jdata.get('Teaser', '(no teaser)')
-        self.desc = jdata.get('Description', '(no description)')
+        self.name = jdata.get('Name') or '(no name)'
+        self.teaser = jdata.get('Teaser') or '(no teaser)'
+        self.desc = jdata.get('Description') or '(no description)'
         self.tag = jdata.get('Tags')
         self.requirements = []
         for r in jdata.get('QualitiesRequired'):
