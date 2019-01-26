@@ -1,7 +1,7 @@
 import json
 
 with open('skyless.dat', 'w') as f:
-    for name in ['areas', 'bargains', 'domiciles', 'events', 'exchanges', 'personae', 'prospects', 'qualities', 'settings']:
+    for name in ['areas', 'bargains', 'domiciles', 'events', 'exchanges', 'personae', 'prospects', 'qualities', 'settings', 'ports']:
         with open(f'{name}.txt') as g:
                 data = json.loads(g.read())
                 for line in data:
