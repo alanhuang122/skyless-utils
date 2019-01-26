@@ -107,8 +107,13 @@ def sub_qualities(expression):
         return expression
     for x in set(re.findall(r'\[qb?:(\d+)\]', expression)):
         expression = expression.replace(x, Quality.get(int(x)).name)
-    for x in set(re.findall(r'(\[qvd:(\d+)\(([^\)]+)\)\])', expression)):    # matches [qvd:123456(QVD key)]
-        quality = Quality.get(int(x[1]))
+    for x in set(re.findall(r'(\[qvd:([^\(]+)\(([^\)]+)\)\])', expression)):    # matches [qvd:quality name OR ID(QVD key)]
+        try:
+            quality = Quality.get(int(x[1]))
+        except ValueError:
+            quality = Quality.get_by_name(x[1])
+            if not quality:
+                continue
         if quality.variables == None:
             continue
         text = ''
@@ -256,6 +261,13 @@ class Quality:
             if cache[key].event:
                 cache[key].event = Storylet.get(cache[key].event)
             return cache[key]
+
+    @classmethod
+    def get_by_name(self, name):
+        for key in data:
+            if key.startswith('qualities:') and data[key].get('Name') == name:
+                return Quality(data[key])
+        return None
 
     def get_changedesc(self, level):
         if self.changedesc and isinstance(level, int):
