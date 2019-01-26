@@ -406,20 +406,21 @@ class Requirement:  #done
                         string += f' - no requirement'
         return string
 
-def render_requirements(rl):
-    reqs = []
-    challenges = []
-    for r in rl:
-        if r.type == 'Requirement':
-            reqs.append(str(r))
-        else:
-            challenges.append(str(r))
-    if not reqs and not challenges:
-        return 'None'
-    string = ', '.join(reqs)
-    if challenges:
-        string += '\n' + '\n'.join(challenges)
-    return string
+    @classmethod
+    def render_requirements(self, rl):
+        reqs = []
+        challenges = []
+        for r in rl:
+            if r.type == 'Requirement':
+                reqs.append(str(r))
+            else:
+                challenges.append(str(r))
+        if not reqs and not challenges:
+            return 'None'
+        string = ', '.join(reqs)
+        if challenges:
+            string += '\n' + '\n'.join(challenges)
+        return string
 
 class Storylet: #done?
     def __init__(self, jdata, shallow=False):
@@ -489,7 +490,7 @@ class Storylet: #done?
             pass
         string += ' '.join(restrictions) + '\n'
         string += f'Description: {render_text(self.desc)}\n'
-        string += f'Requirements: {render_requirements(self.requirements)}\n\n'
+        string += f'Requirements: {Requirement.render_requirements(self.requirements)}\n\n'
         string += 'Branches:\n{}'.format(f"\n{'~' * 20}\n\n".join(self.render_branches()))
         return string
     
@@ -559,7 +560,7 @@ class Branch:   #done
         string = f'Branch Title: "{render_text(self.title)}"'
         if self.desc:
             string += f'\nDescription: {render_text(self.desc)}'
-        string += f'\nRequirements: {render_requirements(self.requirements)}\n'
+        string += f'\nRequirements: {Requirement.render_requirements(self.requirements)}\n'
         if self.cost != 1:
             string += f'\nAction cost: {self.cost}'
         string += f'\n{self.render_events()}'
@@ -967,7 +968,7 @@ class Shop:
     def __str__(self):
         string = f'Shop name: {self.name}\n'
         string += f'Description: {self.desc}\n'
-        string += f'Requirements: {render_requirements(self.requirements)}\n'
+        string += f'Requirements: {Requirement.render_requirements(self.requirements)}\n'
         string += f'Items:\n'
         string += '\n\n'.join([str(o) for o in self.offerings])
         return string
@@ -1096,10 +1097,10 @@ class Prospect:
         string += f'Destination: {self.setting.title}\n\n'
         string += f'Description: {render_text(self.desc)}\n'
         if self.requirements:
-            string += f'Requirements: {render_requirements(self.requirements)}\n'
+            string += f'Requirements: {Requirement.render_requirements(self.requirements)}\n'
         if self.effects:
             string += f'Effects when accepted: {self.effects}\n'
-        string += f'Item requested: {self.quantity} x {self.item.name}\n'
+        string += f'Item requested: {self.quantity} x {self.item.name if self.item else "None"}\n'
         string += f'Buys for {self.price} Sovereigns\n\n'
         string += f'Bonus:\n'
         string += f'\n\n'.join([str(c) for c in self.completions])
@@ -1143,7 +1144,7 @@ class Completion:
     def __str__(self):
         string = f'Description: {self.message}\n'
         if self.requirements:
-            string += f'Requirements: {render_requirements(self.requirements)}\n'
+            string += f'Requirements: {Requirement.render_requirements(self.requirements)}\n'
         string += f'Effects: {self.effects}'
         return string
 
@@ -1203,7 +1204,7 @@ class Bargain:
             string += '(no locations)\n'
         string += f'Description: {render_text(self.desc)}\n'
         if self.requirements:
-            string += f'Requirements: {render_requirements(self.requirements)}\n'
+            string += f'Requirements: {Requirement.render_requirements(self.requirements)}\n'
         string += f'Item offered: {self.quantity} x {self.item.name if self.item else "None"}\n'
         string += f'Sells for {self.price} Sovereigns'
         return string
