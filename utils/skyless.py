@@ -368,7 +368,10 @@ class Requirement:  #done
             string += '[Branch hidden if failed] '
         if self.type == 'Challenge':
             if self.quality.id == 138163:
-                string += f'Fortune: {50 - difficulty * 10}% chance'
+                try:
+                    string += f'Fortune: {50 - difficulty * 10}% chance'
+                except TypeError:
+                    string += f'Fortune: 50% - {difficulty} * 10% chance'
             else:
                 string += f'{self.test_type} {self.type}: {self.quality.name} {difficulty}'
         else:
@@ -394,10 +397,13 @@ class Requirement:  #done
                         desc = f' ({render_text(desc[1])})'
                     string += f' at least {lower_bound}{desc if desc else ""}'
                 except:
-                    desc = self.quality.get_leveldesc(upper_bound) or self.quality.get_changedesc(upper_bound)
-                    if desc:
-                        desc = f' ({render_text(desc[1])})'
-                    string += f' no more than {upper_bound}{desc if desc else ""}'
+                    try:
+                        desc = self.quality.get_leveldesc(upper_bound) or self.quality.get_changedesc(upper_bound)
+                        if desc:
+                            desc = f' ({render_text(desc[1])})'
+                        string += f' no more than {upper_bound}{desc if desc else ""}'
+                    except:
+                        string += f' - no requirement'
         return string
 
 def render_requirements(rl):
