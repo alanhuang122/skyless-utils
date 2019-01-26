@@ -1080,16 +1080,24 @@ class Prospect:
         return f'Prospect: {self.name}'
 
     def __str__(self):
-        parts = [f'Prospect: {self.name}',
-                 f'Destination: {self.setting.title}',
-                 f'Description: {render_text(self.desc)}',
-                 f'Requirements: {render_requirements(self.requirements)}',
-                 f'Effects when accepted: {self.effects}',
-                 f'Item requested: {self.quantity} x {self.item.name}',
-                 f'Buys for {self.price} Sovereigns',
-                 f'Bonus:',
-                 "\n\n".join([str(c) for c in self.completions])]
-        return '\n'.join(parts)
+        string = f'Prospect: {self.name}\n'
+        locations = [port.setting.title for port in Port.get_by_tag(self.tag)]
+        string += f'Tag: {self.tag} '
+        if locations:
+            string += f'(Appears in {", ".join(locations)})\n'
+        else:
+            string += '(no locations)\n'
+        string += f'Destination: {self.setting.title}\n\n'
+        string += f'Description: {render_text(self.desc)}\n'
+        if self.requirements:
+            string += f'Requirements: {render_requirements(self.requirements)}\n'
+        if self.effects:
+            string += f'Effects when accepted: {self.effects}\n'
+        string += f'Item requested: {self.quantity} x {self.item.name}\n'
+        string += f'Buys for {self.price} Sovereigns\n\n'
+        string += f'Bonus:\n'
+        string += f'\n\n'.join([str(c) for c in self.completions])
+        return string
 
     @classmethod
     def get(self, id):
@@ -1127,10 +1135,11 @@ class Completion:
         return f"Prospect: {self.parent.name} - Completion"
 
     def __str__(self):
-        parts = [f'Description: {self.message}',
-                 f'Requirements: {render_requirements(self.requirements)}',
-                 f'Effects: {self.effects}']
-        return '\n'.join(parts)
+        string = f'Description: {self.message}\n'
+        if self.requirements:
+            string += f'Requirements: {render_requirements(self.requirements)}\n'
+        string += f'Effects: {self.effects}'
+        return string
 
 class Bargain:
     def __init__(self, jdata):
@@ -1179,12 +1188,19 @@ class Bargain:
         return f'Bargain: {self.name}'
 
     def __str__(self):
-        parts = [f'Bargain: {self.name} (Tag {self.tag})',
-                 f'Description: {render_text(self.desc)}',
-                 f'Requirements: {render_requirements(self.requirements)}',
-                 f'Item offered: {self.quantity} x {self.item.name if self.item else "None"}',
-                 f'Sells for {self.price} Sovereigns']
-        return '\n'.join(parts)
+        string = f'Bargain: {self.name}\n'
+        locations = [port.setting.title for port in Port.get_by_tag(self.tag)]
+        string += f'Tag {self.tag} '
+        if locations:
+            string += f'(Appears in {", ".join(locations)})\n'
+        else:
+            string += '(no locations)\n'
+        string += f'Description: {render_text(self.desc)}\n'
+        if self.requirements:
+            string += f'Requirements: {render_requirements(self.requirements)}\n'
+        string += f'Item offered: {self.quantity} x {self.item.name if self.item else "None"}\n'
+        string += f'Sells for {self.price} Sovereigns'
+        return string
 
     @classmethod
     def get(self, id):
