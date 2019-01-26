@@ -125,7 +125,10 @@ def sub_qualities(expression):
         expression = expression.replace(x[0], f'{x[0]}\n{text}\n')
         expression = expression.replace(x[1], quality.name)
     for x in set(re.findall(r'(\[dir:([^\]]+)\])', expression)):
-        location_name = data['locations'].get(x[1], '(unknown location)')
+        try:
+            location_name = Port.get_by_uuid(x[1]).name
+        except AttributeError:
+            location_name = 'unknown location'
         replacement = f'[Directions to {location_name}]'
         expression = expression.replace(x[0], replacement)
     return expression
@@ -1191,3 +1194,85 @@ class Bargain:
         else:
             cache[key] = Bargain(data[key])
             return cache[key]
+
+class Port:
+    def __init__(self, jdata):
+        self.raw = jdata
+        self.uuid = jdata.get('UUID')
+        self.name = jdata.get('Name')
+        if set(jdata.keys()) == {'UUID', 'Name'}:
+            self.sparse = True
+            return
+        self.sparse = False
+        self.desc = jdata.get('Description')
+        self.major = jdata.get('IsMajorPort', False)
+        self.platform = jdata.get('IsPlatform', False)
+        self.showshops = jdata.get('ShowShopsOnPlatform', False)
+        self.setting = Setting.get(jdata.get('SettingId'))
+        self.areas = []
+        for aid in jdata.get('Areas'):
+            self.areas.append(Area.get(aid))
+        self.tags = jdata.get('BazaarItemTags')
+        self.shop_title = jdata.get('BazaarTitle', f'{self.name} Bazaar')
+        if 'ExportQualityId' in jdata:
+            self.export = Quality.get(jdata['ExportQualityId'])
+        self.copy_text = jdata.get('BazaarCopyText', None)
+        if not self.copy_text:
+            if self.major:
+                self.copy_text = "Locomotive captains gather at the bazaar to trade goods and information. Here, you can acquire 'prospects': opportunities to sell a good at a distant port for an excellent price. Accept a prospect to claim it. Then source and deliver the goods."
+            else:
+                self.copy_text = "Locomotive captains gather at the bazaar to trade goods and information. You may find bargains here, or fulfil prospects you have claimed."
+        else:
+            if self.major:
+                self.copy_text += " Here, you can acquire 'prospects': opportunities to sell a good at a distant port for an excellent price. Accept a prospect to claim it, source the goods, and deliver them."
+            else:
+                self.copy_text += " You may find bargains here, or fulfil prospects you have claimed."
+
+    def __repr__(self):
+        return f'Port: {self.name} (UUID {self.uuid})'
+
+    def __str__(self):
+        if self.sparse:
+            return repr(self)
+        if self.major:
+            string = f'Major Port: {self.name}'
+        elif self.platform:
+            string = f'Platform: {self.name}'
+        else:
+            string = f'Port: {self.name}'
+        string += f' (UUID: {self.uuid})\n'
+        string += f'Description: {self.desc}\n'
+        string += f'Show shops: {self.showshops}\n'
+        string += f'Setting: {self.setting}\n'
+        string += f'Areas: {[a.name for a in self.areas]}\n'
+        string += f'Tags: {self.tags}\n'
+        string += f'Shop: {self.shop_title}'
+        try:
+            string += f' (Sells {self.export.name})\n'
+        except AttributeError:
+            string += '\n'
+        string += f'Copy text: {self.copy_text}'
+        return string
+
+    @classmethod
+    def get(self, id):
+        key = f'ports:{id}'
+        if key in cache:
+            return cache[key]
+        else:
+            cache[key] = Port(data[key])
+            return cache[key]
+
+    @classmethod
+    def get_by_uuid(self, uuid):
+        for key in data:
+            if key.startswith('ports:') and data[key]['UUID'] == uuid:
+                return Port.get(key.split(':')[1])
+
+    @classmethod
+    def get_by_tag(self, tag):
+        ports = []
+        for key in data:
+            if key.startswith('ports:') and tag in data[key].get('BazaarItemTags', []):
+                ports.append(Port.get(key.split(':')[1]))
+        return ports
