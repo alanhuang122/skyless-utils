@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using Failbetter.Core;
@@ -11,8 +11,8 @@ namespace Sunless_Skies_Serialization
 {
     class Reserialize
     {
-        static string latest = "2018-10-10";
-        static string basepath = "[SET PATH HERE]\\";
+        static string latest = "2019-01-13";
+        static string basepath = "[SET OUTPUT PATH HERE]\\";
         static string srcpath = basepath + latest + "\\TextAsset\\";
         static string dstpath = basepath + latest + "\\Decoded\\";
 
@@ -32,7 +32,8 @@ namespace Sunless_Skies_Serialization
         {
             DefaultValueHandling = DefaultValueHandling.Ignore,
             NullValueHandling = NullValueHandling.Ignore,
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
+            PreserveReferencesHandling = PreserveReferencesHandling.Objects
         };
 
         public static void SerializeToStream<T>(string path, T data)
@@ -43,7 +44,7 @@ namespace Sunless_Skies_Serialization
                 {
                     using (JsonTextWriter jtw = new JsonTextWriter(sw))
                     {
-                        Newtonsoft.Json.JsonSerializer.Create(_settings).Serialize(jtw, (object) data);
+                        Newtonsoft.Json.JsonSerializer.Create(_settings).Serialize(jtw, data);
                     }
                 }
             }
