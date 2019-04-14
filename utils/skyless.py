@@ -123,7 +123,7 @@ def sub_qualities(expression):
         else:
             text = 'None'
         expression = expression.replace(x[0], f'{x[0]}\n{text}\n')
-        expression = expression.replace(x[1], quality.name)
+        expression = expression.replace(x[0], x[0].replace(x[1], quality.name))
     for x in set(re.findall(r'(\[dir:([^\]]+)\])', expression)):
         try:
             location_name = Port.get_by_uuid(x[1]).name
