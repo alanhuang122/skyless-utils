@@ -272,6 +272,72 @@ class Quality:
                 return Quality(data[key])
         return None
 
+    # get_* functions don't evaluate Advanced effects
+
+    @classmethod
+    def get_requirements(self, quality):
+        results = {'storylets': [],
+                   'branches': [],
+                   'twists': []}
+        if isinstance(quality, Quality):
+            quality = quality.id
+        for key, value in data.items():
+            if not key.startswith('events:'):
+                continue
+            added = False
+            storylet = Storylet.get(key.split(':')[1])
+            for requirement in storylet.requirements:
+                if requirement.quality.id == quality:
+                    results['storylets'].append(storylet)
+                    added = True
+                    break
+            if not added:
+                for branch in storylet.branches:
+                    added = False
+                    for requirement in branch.requirements:
+                        if requirement.quality.id == quality:
+                            results['branches'].append(branch)
+                            added = True
+                            break
+                    if not added:
+                        for ekey, evalue in branch.events.items():
+                            if ekey.endswith('Chance'):
+                                continue
+                            for twist in evalue.branches:
+                                for requirement in twist.requirements:
+                                    if requirement.quality.id == quality:
+                                        results['twists'].append(twist)
+                                        break
+        return results
+
+    @classmethod
+    def get_effects(self, quality):
+        results = []
+        if isinstance(quality, Quality):
+            quality = quality.id
+        for key, value in data.items():
+            if not key.startswith('events:'):
+                continue
+            storylet = Storylet.get(key.split(':')[1])
+            for branch in storylet.branches:
+                for ekey, evalue in branch.events.items():
+                    if ekey.endswith('Chance'):
+                        continue
+                    added = False
+                    for effect in evalue.effects:
+                        if effect.quality.id == quality:
+                            results.append(evalue)
+                            added = True
+                    if not added:
+                        for twist in evalue.branches:
+                            for ek2, ev2 in twist.events.items():
+                                if ek2.endswith('Chance'):
+                                    continue
+                                for effect in ev2.effects:
+                                    if effect.quality.id == quality:
+                                        results.append(ev2)
+        return results
+
     def get_changedesc(self, level):
         if self.changedesc and isinstance(level, int):
             descs = sorted(list(self.changedesc.items()), reverse=True)
@@ -507,6 +573,16 @@ class Storylet: #done?
             cache[key] = Storylet(data[f'events:{id}'], False)
             return cache[key]
 
+def add_requirements(l, req):
+    if any([key in req for key in ['DifficultyLevel', 'DifficultyAdvanced']]) and any([key in req for key in ['MaxLevel', 'MaxAdvanced', 'MinLevel', 'MinAdvanced']]):
+        l.append(Requirement(req))
+        for i in list(req.items()):
+            if i[0].startswith('Difficulty'):
+                req.pop(i[0])
+        l.append(Requirement(req))
+    else:
+        l.append(Requirement(req))
+
 class Branch:   #done
     def __init__(self, jdata, parent):
         self.raw = jdata
@@ -518,7 +594,7 @@ class Branch:   #done
         self.button = jdata.get('ButtonText', 'Go')
         self.requirements = []
         for r in jdata['QualitiesRequired']:
-            self.requirements.append(Requirement(r))
+            add_requirements(self.requirements, r)
         self.events = {}
         for key in list(jdata.keys()):
             if key in ['DefaultEvent', 'SuccessEvent', 'RareSuccessEvent', 'RareSuccessEventChance', 'RareDefaultEvent', 'RareDefaultEventChance']:
@@ -551,7 +627,7 @@ class Branch:   #done
                     return False
             except AttributeError:
                 continue
-        return set(self.requirements) == set(other.requirements) and set(self.events.items()) == set(self.events.items())
+        return set(self.requirements) == set(other.requirements) and set(self.events.items()) == set(other.events.items())
     
     def __repr__(self):
         return f'"{self.title}"'
@@ -745,7 +821,7 @@ class Effect:   #done: Priority goes 3/2/1/0
 
 
     def __eq__(self, other):
-        for attr in ['id' 'amount', 'setTo', 'ceil', 'floor', 'priority']:
+        for attr in ['id', 'amount', 'setTo', 'ceil', 'floor', 'priority']:
             if hasattr(self, attr) != hasattr(other, attr):
                 return False
             try:
@@ -786,6 +862,12 @@ class Effect:   #done: Priority goes 3/2/1/0
         try:
             if self.quality.changedesc and isinstance(setTo, int):
                 desc = self.quality.get_changedesc(setTo)
+                try:
+                    return f'{self.quality.name} (set to {setTo} ({render_text(desc[1])}){limits})'
+                except TypeError:
+                    pass
+            elif self.quality.leveldesc and isinstance(setTo, int):
+                desc = self.quality.get_leveldesc(setTo)
                 try:
                     return f'{self.quality.name} (set to {setTo} ({render_text(desc[1])}){limits})'
                 except TypeError:
@@ -1223,7 +1305,7 @@ class Port:
         self.raw = jdata
         self.uuid = jdata.get('UUID')
         self.name = jdata.get('Name')
-        if set(jdata.keys()) == {'UUID', 'Name'}:
+        if set(jdata.keys()).issubset({'UUID', 'Id', 'Name'}):
             self.sparse = True
             return
         self.sparse = False
