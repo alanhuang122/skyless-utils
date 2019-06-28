@@ -757,6 +757,8 @@ class Event:    #done
         effects = []
         if self.effects:
             effects.append(str(self.effects))
+        else:
+            effects.append('None')
         if self.exotic_effect:
             effects.append(f'Exotic effect: {self.exotic_effect}')
         if self.newsetting:
