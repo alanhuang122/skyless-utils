@@ -393,6 +393,8 @@ class Requirement:  #done
             self.type = 'Requirement'
         assert jdata.get('BranchVisibleWhenRequirementFailed') == jdata.get('VisibleWhenRequirementFailed')
         self.visibility = jdata.get('BranchVisibleWhenRequirementFailed', False)
+        self.locked_message = jdata.get('CustomLockedMessage')
+        self.unlocked_message = jdata.get('CustomUnlockedMessage')
 
     def __hash__(self):
         attrs = []
@@ -470,6 +472,13 @@ class Requirement:  #done
                         string += f' no more than {upper_bound}{desc if desc else ""}'
                     except:
                         string += f' - no requirement'
+            messages = []
+            if self.locked_message:
+                messages.append(f'Locked: {self.locked_message}')
+            if self.unlocked_message:
+                messages.append(f'Unlocked: {self.unlocked_message}')
+            if messages:
+                string += f' ({" / ".join(messages)})'
         return string
 
     @classmethod
