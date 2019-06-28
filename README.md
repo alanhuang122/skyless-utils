@@ -17,8 +17,6 @@ This codebase is largely based off [fl-utils](https://github.com/alanhuang122/fl
   The C# file `Reserialize.cs` will perform this function.<br>
   Namespace `Skyless.Assets.Code.Skyless.Utilities.Serialization` is defined in `Assembly-CSharp.dll`, in the Sunless Skies directory.
 
-NB: There's also [an indexed S3 bucket](https://data.skylesssetup.storynexus.com) with JSON files. The provenance and status of said files are unknown to me at this moment.
-
 Running `convert.py` from the directory containing the JSON-serialized data will produce a file suitable for use with `init.py`.
 
 Run `python -i init.py` from the directory containing the data file.
