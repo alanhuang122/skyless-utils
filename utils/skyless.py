@@ -650,13 +650,13 @@ class Branch:   #done
                 event = event_dict[type]
                 title = render_text(event.title)
                 if type == 'SuccessEvent':
-                    string = f'Success: "{render_text(title)}"'
+                    string = f'Success: "{title}"'
                 elif type == 'RareSuccessEvent':
-                    string = f'Rare Success: "{render_text(title)}" ({event_dict["RareSuccessEventChance"]}% chance)'
+                    string = f'Rare Success: "{title}" ({event_dict["RareSuccessEventChance"]}% chance)'
                 elif type == 'DefaultEvent':
-                    string = f'{"Failure" if "SuccessEvent" in event_dict else "Event"}: "{render_text(title)}"'
+                    string = f'{"Failure" if "SuccessEvent" in event_dict else "Event"}: "{title}"'
                 else:
-                    string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{render_text(title)}" ({event_dict["RareDefaultEventChance"]}% chance)'
+                    string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{title}" ({event_dict["RareDefaultEventChance"]}% chance)'
                 string += f'\n{render_text(event.desc)}\n\nEffects: {event.list_effects()}'
                 if event.branches:
                     string += '\nSub-branches:\n{}'.format(f"\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
