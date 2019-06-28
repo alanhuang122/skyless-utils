@@ -432,7 +432,7 @@ class Requirement:  #done
             pass
 
         string = ''
-        if not self.visibility:
+        if self.type == 'Requirement' and not self.visibility:
             string += '[Branch hidden if failed] '
         if self.type == 'Challenge':
             if self.quality.id == 138163:
