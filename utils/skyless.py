@@ -492,7 +492,7 @@ class Requirement:  #done
                 challenges.append(str(r))
         if not reqs and not challenges:
             return 'None'
-        string = ', '.join(reqs)
+        string = '\n'.join(reqs)
         if challenges:
             string += '\n' + '\n'.join(challenges)
         return string
