@@ -666,9 +666,11 @@ class Branch:   #done
                     string = f'{"Failure" if "SuccessEvent" in event_dict else "Event"}: "{title}"'
                 else:
                     string = f'Rare {"Failure" if "SuccessEvent" in event_dict else "Success"}: "{title}" ({event_dict["RareDefaultEventChance"]}% chance)'
-                string += f'\n{render_text(event.desc)}\n\nEffects: {event.list_effects()}'
-                if event.branches:
-                    string += '\nSub-branches:\n{}'.format(f"\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
+                if event.branches:  # Event has Twists; don't display Effects but instead display Twists (do display Event text, though)
+                    twists = 'Sub-branches:\n{}'.format(f"\n{'*' * 20}\n\n".join([str(b) for b in event.branches]))
+                    string += f'\n{render_text(event.desc)}\n\n{twists}'
+                else:    # This is a Twist or bare Event - print effects
+                    string += f'\n{render_text(event.desc)}\n\nEffects: {event.list_effects()}'
                 strings.append(string)
         return f'\n{"-" * 20}\n\n'.join(strings)
 
@@ -764,18 +766,27 @@ class Event:    #done
     
     def list_effects(self):
         effects = []
-        if self.effects:
-            effects.append(str(self.effects))
+        if isinstance(self.parent.parent, Event):
+            event = self.parent.parent
+            if event.effects or self.effects:
+                effects.append(str(event.effects + self.effects))
+            else:
+                effects.append('None')
         else:
-            effects.append('None')
-        if self.exotic_effect:
-            effects.append(f'Exotic effect: {self.exotic_effect}')
-        if self.newsetting:
-            effects.append(f'Move to new setting: {self.newsetting}')
-        if self.newarea:
-            effects.append(f'Move to new area: {self.newarea}')
-        if self.linkedevent:
-            effects.append(f'Linked event: "{render_text(self.linkedevent.title)}" (Id {self.linkedevent.id})')
+            event = self
+            if self.effects:
+                effects.append(str(self.effects))
+            else:
+                effects.append('None')
+        # Taking these effects from either itself or its parent (if it's a Twist) is fine because there are no Twists with any of these keys
+        if event.exotic_effect:
+            effects.append(f'Exotic effect: {event.exotic_effect}')
+        if event.newsetting:
+            effects.append(f'Move to new setting: {event.newsetting}')
+        if event.newarea:
+            effects.append(f'Move to new area: {event.newarea}')
+        if event.linkedevent:
+            effects.append(f'Linked event: "{render_text(event.linkedevent.title)}" (Id {event.linkedevent.id})')
         return '\n'.join(effects)
         
     @classmethod
