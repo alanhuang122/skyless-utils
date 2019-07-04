@@ -99,6 +99,11 @@ class Nature(Enum):
     Thing = 2
     X = 3
 
+class Priority(Enum):
+    Headline = 1
+    Standard = 2
+    Hidden = 3
+
 def render_text(string):
     return sub_qualities(render_html(string))
 
@@ -395,6 +400,7 @@ class Requirement:  #done
         self.visibility = jdata.get('BranchVisibleWhenRequirementFailed', False)
         self.locked_message = jdata.get('CustomLockedMessage')
         self.unlocked_message = jdata.get('CustomUnlockedMessage')
+        self.hidden = self.quality.category == Category.Hidden
 
     def __hash__(self):
         attrs = []
@@ -434,6 +440,8 @@ class Requirement:  #done
         string = ''
         if self.type == 'Requirement' and not self.visibility:
             string += '[Branch hidden if failed] '
+        if self.hidden:
+            string += '[Hidden requirement] '
         if self.type == 'Challenge':
             if self.quality.id == 138163:
                 try:
@@ -827,9 +835,9 @@ class Effect:   #done: Priority goes 3/2/1/0
         except KeyError:
             pass
         try:
-            self.priority = jdata['Priority']
+            self.priority = Priority(jdata['Priority'])
         except KeyError:
-            self.priority = 0
+            self.priority = Priority.Standard
 
     def __hash__(self):
         attrs = []
@@ -880,32 +888,34 @@ class Effect:   #done: Priority goes 3/2/1/0
                     limits = ''
         if self.equip:
             limits += ' (force equipped)'
+
+        hidden = '[Hidden effect] ' if self.priority == Priority.Hidden or self.quality.category == Category.Hidden else ''
                 
         try:
             if self.quality.changedesc and isinstance(setTo, int):
                 desc = self.quality.get_changedesc(setTo)
                 try:
-                    return f'{self.quality.name} (set to {setTo} ({render_text(desc[1])}){limits})'
+                    return f'{hidden}{self.quality.name} (set to {setTo} ({render_text(desc[1])}){limits})'
                 except TypeError:
                     pass
             elif self.quality.leveldesc and isinstance(setTo, int):
                 desc = self.quality.get_leveldesc(setTo)
                 try:
-                    return f'{self.quality.name} (set to {setTo} ({render_text(desc[1])}){limits})'
+                    return f'{hidden}{self.quality.name} (set to {setTo} ({render_text(desc[1])}){limits})'
                 except TypeError:
                     pass
-            return f'{self.quality.name} (set to {setTo}{limits})'
+            return f'{hidden}{self.quality.name} (set to {setTo}{limits})'
         except:
             if self.quality.nature == 2 or not self.quality.pyramid:
                 try:
-                    return f'{amount:+} x {self.quality.name}{limits}'
+                    return f'{hidden}{amount:+} x {self.quality.name}{limits}'
                 except:
-                    return f'{"" if amount.startswith("-") else "+"}{amount} {self.quality.name}{limits}'
+                    return f'{hidden}{"" if amount.startswith("-") else "+"}{amount} {self.quality.name}{limits}'
             else:
                 try:
-                    return f'{self.quality.name} ({amount:+} cp{limits})'
+                    return f'{hidden}{self.quality.name} ({amount:+} cp{limits})'
                 except:
-                    return f'{self.quality.name} ({"" if amount.startswith("-") else ""}{amount} cp{limits})'
+                    return f'{hidden}{self.quality.name} ({"" if amount.startswith("-") else ""}{amount} cp{limits})'
 
 class Setting:
     def __init__(self, jdata):
