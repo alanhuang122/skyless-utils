@@ -92,6 +92,7 @@ class Category(Enum):
     SmallWeapon = 70007
     LargeWeapon = 70008
     Scout = 70009
+    Engine = 70010
 
 class Nature(Enum):
     Unspecified = 0
