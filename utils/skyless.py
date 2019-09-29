@@ -161,7 +161,7 @@ class Quality:
         self.difficulty = jdata.get('DifficultyScaler')
         self.enhanceable = jdata.get('IsEnhanceable', False)
         self.enhancements = []
-        for x in jdata['Enhancements']:
+        for x in jdata.get('Enhancements', []):
             self.enhancements.append(Effect(x))
         self.equippable = jdata.get('IsEquippable', False)
         self.event = jdata.get('UseEvent', {}).get('Id')
@@ -186,7 +186,7 @@ class Quality:
         self.pyramid = 'UsePyramidNumbers' in jdata
         self.qep = jdata.get('QEffectPriority')
         self.qualities = []
-        for x in jdata['QualitiesPossessedList']:
+        for x in jdata.get('QualitiesPossessedList', []):
             self.qualities.append(Effect(x))
         self.raw = jdata
         try:
