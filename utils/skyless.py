@@ -520,6 +520,7 @@ class Storylet: #done?
             self.area = Area.get(jdata['LimitedToArea']['Id'])
         except KeyError:
             self.area = None
+        self.autofire = jdata.get('Urgency') == 10 and (self.area is None or self.area.id != 109451)
         self.requirements = []
         for r in jdata['QualitiesRequired']:
             self.requirements.append(Requirement(r))
@@ -558,11 +559,11 @@ class Storylet: #done?
         return getattr(self.setting, 'id', None) == getattr(other.setting, 'id', None) and getattr(self.area, 'id', None) == getattr(other.area, 'id', None) and set(self.requirements) == set(other.requirements) and set(self.branches) == set(other.branches)
 
     def __repr__(self):
-        return f'Storylet: "{self.title}"'
+        return f'{"AUTOFIRE " if self.autofire else ""}Storylet: "{self.title}"'
 
     def __str__(self):
         #_,c = os.popen('stty size', u'r').read().split()
-        string = f'Storylet Title: "{render_text(self.title)}"\n'
+        string = f'{"AUTOFIRE " if self.autofire else ""}Storylet Title: "{render_text(self.title)}"\n'
         restrictions = []
         try:
             restrictions.append(f'Appears in {self.setting.title}')
