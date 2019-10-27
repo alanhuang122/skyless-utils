@@ -137,6 +137,12 @@ def sub_qualities(expression):
             location_name = 'unknown location'
         replacement = f'[Directions to {location_name}]'
         expression = expression.replace(x[0], replacement)
+    for x in set(re.findall(r'(\[df:([^\]]+)\])', expression)):
+        expression = expression.replace(x[0], f'[Formatted Date: {Quality.get(int(x[1])).name}]')
+    for x in set(re.findall(r'(\[dl:([^\]]+)\])', expression)):
+        expression = expression.replace(x[0], f'[Days left until {Quality.get(int(x[1])).name}]')
+    for x in set(re.findall(r'(\[train:[^\]]+\])', expression)):
+        expression = expression.replace(x, f'[Train name]')
     return expression
 
 def render_html(string):
