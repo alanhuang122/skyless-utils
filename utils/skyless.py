@@ -885,7 +885,10 @@ class Effect:   #done: Priority goes 3/2/1/0
         if not hasattr(self, 'setTo') and not hasattr(self, 'amount'):
             return f'{self.quality.name} - no effect'
         try:
-            limits = f' if no more than {self.ceil} and at least {self.floor}'
+            if self.ceil == self.floor:
+                limits = f' if exactly {self.ceil}'
+            else:
+                limits = f' if no more than {self.ceil} and at least {self.floor}'
         except:
             try:
                 limits = f' if no more than {self.ceil}'
